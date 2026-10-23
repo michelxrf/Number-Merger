@@ -100,6 +100,35 @@ namespace NumberMerge.Gameplay
             return false;
         }
 
+        public bool ApplyGravity()
+        {
+            bool moved = false;
+
+            for (int column = 0; column < ColumnCount; column++)
+            {
+                int writeRow = 0;
+
+                for (int readRow = 0; readRow < TotalRowCount; readRow++)
+                {
+                    if (_tiles[readRow, column] == EmptyValue)
+                    {
+                        continue;
+                    }
+
+                    if (readRow != writeRow)
+                    {
+                        _tiles[writeRow, column] = _tiles[readRow, column];
+                        _tiles[readRow, column] = EmptyValue;
+                        moved = true;
+                    }
+
+                    writeRow++;
+                }
+            }
+
+            return moved;
+        }
+
         public int GetPieceCount(int column)
         {
             ValidateColumn(column);
