@@ -4,10 +4,6 @@ namespace NumberMerge.Gameplay
 {
     public sealed class PieceGenerator
     {
-        public const int TwoValue = 2;
-        public const int FourValue = 4;
-        public const int FourChancePercent = 10;
-
         private readonly IRandomSource _random;
 
         public PieceGenerator()
@@ -18,28 +14,28 @@ namespace NumberMerge.Gameplay
         public PieceGenerator(IRandomSource random)
         {
             _random = random ?? throw new ArgumentNullException(nameof(random));
-            Current = GenerateValue();
-            Next = GenerateValue();
         }
 
         public int Current { get; private set; }
         public int Next { get; private set; }
 
-        public void Advance()
+        // Generates both pieces of the queue from the current board state.
+        public void Reset(BoardModel board)
+        {
+            Current = GenerateValue(board);
+            Next = GenerateValue(board);
+        }
+
+        // Promotes Next to Current and generates a new Next from the current board state.
+        public void Advance(BoardModel board)
         {
             Current = Next;
-            Next = GenerateValue();
+            Next = GenerateValue(board);
         }
 
-        public void Reset()
+        private int GenerateValue(BoardModel board)
         {
-            Current = GenerateValue();
-            Next = GenerateValue();
-        }
-
-        private int GenerateValue()
-        {
-            return _random.Next(100) < FourChancePercent ? FourValue : TwoValue;
+            return SpawnTable.Pick(SpawnTable.Build(board), _random);
         }
     }
 }

@@ -1,0 +1,1474 @@
+fileFormatVersion: 2
+guid: 82ae267130706c44c8ac2cfee3a4d1d1
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8031241958601281349
+    second: petals_0
+  - first:
+      213: 4279990212392310870
+    second: petals_1
+  - first:
+      213: -7209431980491301340
+    second: petals_2
+  - first:
+      213: 8329773495702740140
+    second: petals_3
+  - first:
+      213: 4870879447488391430
+    second: petals_4
+  - first:
+      213: -7005205098798051682
+    second: petals_5
+  - first:
+      213: -4670761774175104807
+    second: petals_6
+  - first:
+      213: -1794553674790462703
+    second: petals_7
+  - first:
+      213: -2780185384550222581
+    second: petals_8
+  - first:
+      213: -638250932581253724
+    second: petals_9
+  - first:
+      213: 5058549835464482613
+    second: petals_10
+  - first:
+      213: 1017775143017751970
+    second: petals_11
+  - first:
+      213: -2955943846821428414
+    second: petals_12
+  - first:
+      213: 7939188254569540916
+    second: petals_13
+  - first:
+      213: -1689822714343260900
+    second: petals_14
+  - first:
+      213: -5316891531982298182
+    second: petals_15
+  - first:
+      213: -4224881873057480348
+    second: petals_16
+  - first:
+      213: -773059176294485964
+    second: petals_17
+  - first:
+      213: -8194672256750949971
+    second: petals_18
+  - first:
+      213: -2954550827244382268
+    second: petals_19
+  - first:
+      213: 8681397878769750376
+    second: petals_20
+  - first:
+      213: 1219740455290547317
+    second: petals_21
+  - first:
+      213: 9192112294219523178
+    second: petals_22
+  - first:
+      213: 2380456394540454824
+    second: petals_23
+  - first:
+      213: -2053290700713145467
+    second: petals_24
+  - first:
+      213: 5231776039685288617
+    second: petals_25
+  - first:
+      213: 5493301173359168604
+    second: petals_26
+  - first:
+      213: 8905144738152276944
+    second: petals_27
+  - first:
+      213: -5977045599766052676
+    second: petals_28
+  - first:
+      213: 4191489546775648025
+    second: petals_29
+  - first:
+      213: -4373629701867422134
+    second: petals_30
+  - first:
+      213: -3773226767746591807
+    second: petals_31
+  - first:
+      213: 2140207167284390578
+    second: petals_32
+  - first:
+      213: 1368933592710519919
+    second: petals_33
+  - first:
+      213: 5435970788786058923
+    second: petals_34
+  - first:
+      213: 7127903951724782890
+    second: petals_35
+  - first:
+      213: -8736703246897773824
+    second: petals_36
+  - first:
+      213: -7098501810621997453
+    second: petals_37
+  - first:
+      213: 5176420390222144366
+    second: petals_38
+  - first:
+      213: 6323120421096144996
+    second: petals_39
+  - first:
+      213: 4101641065296775410
+    second: petals_40
+  - first:
+      213: -8175847862989416889
+    second: petals_41
+  - first:
+      213: -8350325345296761917
+    second: petals_42
+  - first:
+      213: -4680509950258582715
+    second: petals_43
+  - first:
+      213: 7738022844164347487
+    second: petals_44
+  - first:
+      213: 1002612416285464625
+    second: petals_45
+  - first:
+      213: 3767280199349949733
+    second: petals_46
+  - first:
+      213: -7533824126142790872
+    second: petals_47
+  - first:
+      213: 8478575576215346704
+    second: petals_48
+  - first:
+      213: 7860533221415294148
+    second: petals_49
+  - first:
+      213: 933759588354048589
+    second: petals_50
+  - first:
+      213: 1358683760138703219
+    second: petals_51
+  - first:
+      213: -3048916177839536338
+    second: petals_52
+  - first:
+      213: -2560651432373459259
+    second: petals_53
+  - first:
+      213: -2645670957546077678
+    second: petals_54
+  - first:
+      213: -4239627931897205352
+    second: petals_55
+  - first:
+      213: 3520696102414805005
+    second: petals_56
+  - first:
+      213: 1888364020029350537
+    second: petals_57
+  - first:
+      213: 408438856773282774
+    second: petals_58
+  - first:
+      213: -1594118064116744668
+    second: petals_59
+  - first:
+      213: -4332748550759772300
+    second: petals_60
+  - first:
+      213: -1247188733461709009
+    second: petals_61
+  - first:
+      213: 1879960102074237816
+    second: petals_62
+  - first:
+      213: -3095844057509861435
+    second: petals_63
+  - first:
+      213: 6530187272606713670
+    second: petals_64
+  - first:
+      213: 7623203673656546366
+    second: petals_65
+  - first:
+      213: -3246538428911334948
+    second: petals_66
+  - first:
+      213: 8148008848372917419
+    second: petals_67
+  - first:
+      213: 6732121573738591186
+    second: petals_68
+  - first:
+      213: -8516545082317138287
+    second: petals_69
+  - first:
+      213: -5374882821257394875
+    second: petals_70
+  - first:
+      213: -7938611793757452238
+    second: petals_71
+  - first:
+      213: -6613110769111790038
+    second: petals_72
+  - first:
+      213: 5210603081653040334
+    second: petals_73
+  - first:
+      213: 3477826847780025465
+    second: petals_74
+  - first:
+      213: -4846956184842561839
+    second: petals_75
+  - first:
+      213: -7421256155696580470
+    second: petals_76
+  - first:
+      213: -7896310001311733039
+    second: petals_77
+  - first:
+      213: -2793029962321240278
+    second: petals_78
+  - first:
+      213: 4201008764560470730
+    second: petals_79
+  - first:
+      213: -4582750578370484779
+    second: petals_80
+  - first:
+      213: -8787812682680593421
+    second: petals_81
+  - first:
+      213: -7744679621132159827
+    second: petals_82
+  - first:
+      213: -6146547125703280957
+    second: petals_83
+  - first:
+      213: -48095234380179179
+    second: petals_84
+  - first:
+      213: 1967159583830762472
+    second: petals_85
+  - first:
+      213: -5005320739742267131
+    second: petals_86
+  - first:
+      213: 113560077602455014
+    second: petals_87
+  - first:
+      213: 6233527946888931292
+    second: petals_88
+  - first:
+      213: 2242516639070016906
+    second: petals_89
+  - first:
+      213: 6790882102815948283
+    second: petals_90
+  - first:
+      213: 3022877416702840425
+    second: petals_91
+  - first:
+      213: -299270316052307777
+    second: petals_92
+  - first:
+      213: -1120205903122278222
+    second: petals_93
+  - first:
+      213: -1029666137168110333
+    second: petals_94
+  - first:
+      213: 2494354465263289275
+    second: petals_95
+  - first:
+      213: 1317463916773653539
+    second: petals_96
+  - first:
+      213: 4679284526332619942
+    second: petals_97
+  - first:
+      213: -9150942056614176740
+    second: petals_98
+  - first:
+      213: 1582837571190100931
+    second: petals_99
+  - first:
+      213: 1655622753968667647
+    second: petals_100
+  - first:
+      213: 2441832636294115597
+    second: petals_101
+  - first:
+      213: 3976000635252356154
+    second: petals_102
+  - first:
+      213: -5960026380447210125
+    second: petals_103
+  - first:
+      213: 6744731686208251503
+    second: petals_104
+  - first:
+      213: 7320843782269015557
+    second: petals_105
+  - first:
+      213: -8941887636341737984
+    second: petals_106
+  - first:
+      213: -6512796760048118193
+    second: petals_107
+  - first:
+      213: -6377910119288949621
+    second: petals_108
+  - first:
+      213: -4578481040643285395
+    second: petals_109
+  - first:
+      213: -2856374390885426537
+    second: petals_110
+  - first:
+      213: 2329182620066327225
+    second: petals_111
+  - first:
+      213: -254248902234064221
+    second: petals_112
+  - first:
+      213: 6780413476004822781
+    second: petals_113
+  - first:
+      213: -2340549915974513992
+    second: petals_114
+  - first:
+      213: -2823197118346134640
+    second: petals_115
+  - first:
+      213: 7140386901577389244
+    second: petals_116
+  - first:
+      213: -3177569691041156630
+    second: petals_117
+  - first:
+      213: 3977672638302967085
+    second: petals_118
+  - first:
+      213: 1309119046370375324
+    second: petals_119
+  - first:
+      213: -4832483633036701742
+    second: petals_120
+  - first:
+      213: 242996672536208232
+    second: petals_121
+  - first:
+      213: 7958895472141620919
+    second: petals_122
+  - first:
+      213: 6792256029692947891
+    second: petals_123
+  - first:
+      213: 8301213245992344660
+    second: petals_124
+  - first:
+      213: -4743327525019381222
+    second: petals_125
+  - first:
+      213: -4430330550929478113
+    second: petals_126
+  - first:
+      213: 835867346813159214
+    second: petals_127
+  - first:
+      213: -4137094984775033581
+    second: petals_128
+  - first:
+      213: -8464956103669345178
+    second: petals_129
+  - first:
+      213: -9199658623914492437
+    second: petals_130
+  - first:
+      213: -3453787122278478812
+    second: petals_131
+  - first:
+      213: 1092386085227347855
+    second: petals_132
+  - first:
+      213: -8684935688664062755
+    second: petals_133
+  - first:
+      213: -8815916285790883879
+    second: petals_134
+  - first:
+      213: -5264088355392061544
+    second: petals_135
+  - first:
+      213: 3126817950214371328
+    second: petals_136
+  - first:
+      213: 8634210569222257100
+    second: petals_137
+  - first:
+      213: -7496331191170440182
+    second: petals_138
+  - first:
+      213: -2413882089429640418
+    second: petals_139
+  - first:
+      213: -6274539955443555258
+    second: petals_140
+  - first:
+      213: -4281425444799563218
+    second: petals_141
+  - first:
+      213: -6612701891908603846
+    second: petals_142
+  - first:
+      213: 8210391454219132286
+    second: petals_143
+  - first:
+      213: -1291358007048405116
+    second: petals_144
+  - first:
+      213: 3128958873788072638
+    second: petals_145
+  - first:
+      213: 7536883858399943810
+    second: petals_146
+  - first:
+      213: -9029316841840287669
+    second: petals_147
+  - first:
+      213: -7924951591932376332
+    second: petals_148
+  - first:
+      213: 3577450089770287289
+    second: petals_149
+  - first:
+      213: 303205380882538365
+    second: petals_150
+  - first:
+      213: 2968831096567582471
+    second: petals_151
+  - first:
+      213: 2487545165629133345
+    second: petals_152
+  - first:
+      213: -1904473965113260995
+    second: petals_153
+  - first:
+      213: 1827275127644506836
+    second: petals_154
+  - first:
+      213: -2939183960839499153
+    second: petals_155
+  - first:
+      213: -2031030744033920732
+    second: petals_156
+  - first:
+      213: -249539576201580372
+    second: petals_157
+  - first:
+      213: -4654416897077840980
+    second: petals_158
+  - first:
+      213: -1637993848365757183
+    second: petals_159
+  - first:
+      213: -5700973929050182676
+    second: petals_160
+  - first:
+      213: -8824284618776774955
+    second: petals_161
+  - first:
+      213: 5788772484255347809
+    second: petals_162
+  - first:
+      213: -5692986655246288160
+    second: petals_163
+  - first:
+      213: -8795296232708917201
+    second: petals_164
+  - first:
+      213: -4509005078557254066
+    second: petals_165
+  - first:
+      213: -3924997552485143711
+    second: petals_166
+  - first:
+      213: 8364635408636256743
+    second: petals_167
+  - first:
+      213: -7535395847792251037
+    second: petals_168
+  - first:
+      213: -2018017823237692383
+    second: petals_169
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: petals_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 747
+        width: 231
+        height: 239
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 54f44af8204b47f60800000000000000
+      internalID: 8031241958601281349
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_1
+      rect:
+        serializedVersion: 2
+        x: 232
+        y: 744
+        width: 219
+        height: 234
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 658dacbfb64956b30800000000000000
+      internalID: 4279990212392310870
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_2
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 740
+        width: 213
+        height: 246
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42e997a9fc3f2fb90800000000000000
+      internalID: -7209431980491301340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_3
+      rect:
+        serializedVersion: 2
+        x: 633
+        y: 734
+        width: 198
+        height: 256
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cac53de7cdc499370800000000000000
+      internalID: 8329773495702740140
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_4
+      rect:
+        serializedVersion: 2
+        x: 826
+        y: 734
+        width: 206
+        height: 247
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 609eb4bec07d89340800000000000000
+      internalID: 4870879447488391430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_5
+      rect:
+        serializedVersion: 2
+        x: 1036
+        y: 729
+        width: 188
+        height: 251
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e9e036be31388ce90800000000000000
+      internalID: -7005205098798051682
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_6
+      rect:
+        serializedVersion: 2
+        x: 1225
+        y: 723
+        width: 174
+        height: 255
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9d0d1d3c9ee1e2fb0800000000000000
+      internalID: -4670761774175104807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_7
+      rect:
+        serializedVersion: 2
+        x: 1401
+        y: 725
+        width: 130
+        height: 246
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11b1eb3d0f67817e0800000000000000
+      internalID: -1794553674790462703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_8
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 495
+        width: 218
+        height: 237
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b05b6207f1cca69d0800000000000000
+      internalID: -2780185384550222581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_9
+      rect:
+        serializedVersion: 2
+        x: 267
+        y: 493
+        width: 177
+        height: 231
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4adbeed882a7427f0800000000000000
+      internalID: -638250932581253724
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_10
+      rect:
+        serializedVersion: 2
+        x: 479
+        y: 487
+        width: 187
+        height: 230
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53f98752644933640800000000000000
+      internalID: 5058549835464482613
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_11
+      rect:
+        serializedVersion: 2
+        x: 711
+        y: 484
+        width: 181
+        height: 234
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a5abc4a91ddf1e00800000000000000
+      internalID: 1017775143017751970
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_12
+      rect:
+        serializedVersion: 2
+        x: 937
+        y: 487
+        width: 177
+        height: 232
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 243053a8bb06af6d0800000000000000
+      internalID: -2955943846821428414
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_13
+      rect:
+        serializedVersion: 2
+        x: 1128
+        y: 489
+        width: 202
+        height: 224
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43d229667a9ad2e60800000000000000
+      internalID: 7939188254569540916
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_14
+      rect:
+        serializedVersion: 2
+        x: 1353
+        y: 489
+        width: 174
+        height: 228
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1dfe22c13b8c88e0800000000000000
+      internalID: -1689822714343260900
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_15
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 258
+        width: 185
+        height: 219
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab3a9ee525b9636b0800000000000000
+      internalID: -5316891531982298182
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_16
+      rect:
+        serializedVersion: 2
+        x: 251
+        y: 271
+        width: 180
+        height: 206
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4610c6222543e55c0800000000000000
+      internalID: -4224881873057480348
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_17
+      rect:
+        serializedVersion: 2
+        x: 465
+        y: 262
+        width: 179
+        height: 216
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4307c9666ca8545f0800000000000000
+      internalID: -773059176294485964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_18
+      rect:
+        serializedVersion: 2
+        x: 688
+        y: 260
+        width: 188
+        height: 235
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da96c9deffca64e80800000000000000
+      internalID: -8194672256750949971
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_19
+      rect:
+        serializedVersion: 2
+        x: 903
+        y: 251
+        width: 177
+        height: 232
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c7134f2da35ff6d0800000000000000
+      internalID: -2954550827244382268
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_20
+      rect:
+        serializedVersion: 2
+        x: 1116
+        y: 266
+        width: 198
+        height: 217
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 86196edef558a7870800000000000000
+      internalID: 8681397878769750376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_21
+      rect:
+        serializedVersion: 2
+        x: 1333
+        y: 274
+        width: 189
+        height: 213
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57c24cb4b736de010800000000000000
+      internalID: 1219740455290547317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_22
+      rect:
+        serializedVersion: 2
+        x: 12
+        y: 29
+        width: 222
+        height: 227
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a64a4700e61f09f70800000000000000
+      internalID: 9192112294219523178
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_23
+      rect:
+        serializedVersion: 2
+        x: 246
+        y: 34
+        width: 188
+        height: 221
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a314e78a74190120800000000000000
+      internalID: 2380456394540454824
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_24
+      rect:
+        serializedVersion: 2
+        x: 468
+        y: 39
+        width: 186
+        height: 209
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58b416b8cfe3183e0800000000000000
+      internalID: -2053290700713145467
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_25
+      rect:
+        serializedVersion: 2
+        x: 677
+        y: 29
+        width: 195
+        height: 216
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9a277d5c6900b9840800000000000000
+      internalID: 5231776039685288617
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_26
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 22
+        width: 235
+        height: 230
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5c4f4aff402c3c40800000000000000
+      internalID: 5493301173359168604
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_27
+      rect:
+        serializedVersion: 2
+        x: 1122
+        y: 26
+        width: 199
+        height: 230
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0d3610735fd659b70800000000000000
+      internalID: 8905144738152276944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: petals_28
+      rect:
+        serializedVersion: 2
+        x: 1327
+        y: 24
+        width: 195
+        height: 234
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb002abd1b44d0da0800000000000000
+      internalID: -5977045599766052676
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: ed96f20e4a67d7147b4e80b5e4a5d6a6
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      petals_0: 8031241958601281349
+      petals_1: 4279990212392310870
+      petals_10: 5058549835464482613
+      petals_100: 1655622753968667647
+      petals_101: 2441832636294115597
+      petals_102: 3976000635252356154
+      petals_103: -5960026380447210125
+      petals_104: 6744731686208251503
+      petals_105: 7320843782269015557
+      petals_106: -8941887636341737984
+      petals_107: -6512796760048118193
+      petals_108: -6377910119288949621
+      petals_109: -4578481040643285395
+      petals_11: 1017775143017751970
+      petals_110: -2856374390885426537
+      petals_111: 2329182620066327225
+      petals_112: -254248902234064221
+      petals_113: 6780413476004822781
+      petals_114: -2340549915974513992
+      petals_115: -2823197118346134640
+      petals_116: 7140386901577389244
+      petals_117: -3177569691041156630
+      petals_118: 3977672638302967085
+      petals_119: 1309119046370375324
+      petals_12: -2955943846821428414
+      petals_120: -4832483633036701742
+      petals_121: 242996672536208232
+      petals_122: 7958895472141620919
+      petals_123: 6792256029692947891
+      petals_124: 8301213245992344660
+      petals_125: -4743327525019381222
+      petals_126: -4430330550929478113
+      petals_127: 835867346813159214
+      petals_128: -4137094984775033581
+      petals_129: -8464956103669345178
+      petals_13: 7939188254569540916
+      petals_130: -9199658623914492437
+      petals_131: -3453787122278478812
+      petals_132: 1092386085227347855
+      petals_133: -8684935688664062755
+      petals_134: -8815916285790883879
+      petals_135: -5264088355392061544
+      petals_136: 3126817950214371328
+      petals_137: 8634210569222257100
+      petals_138: -7496331191170440182
+      petals_139: -2413882089429640418
+      petals_14: -1689822714343260900
+      petals_140: -6274539955443555258
+      petals_141: -4281425444799563218
+      petals_142: -6612701891908603846
+      petals_143: 8210391454219132286
+      petals_144: -1291358007048405116
+      petals_145: 3128958873788072638
+      petals_146: 7536883858399943810
+      petals_147: -9029316841840287669
+      petals_148: -7924951591932376332
+      petals_149: 3577450089770287289
+      petals_15: -5316891531982298182
+      petals_150: 303205380882538365
+      petals_151: 2968831096567582471
+      petals_152: 2487545165629133345
+      petals_153: -1904473965113260995
+      petals_154: 1827275127644506836
+      petals_155: -2939183960839499153
+      petals_156: -2031030744033920732
+      petals_157: -249539576201580372
+      petals_158: -4654416897077840980
+      petals_159: -1637993848365757183
+      petals_16: -4224881873057480348
+      petals_160: -5700973929050182676
+      petals_161: -8824284618776774955
+      petals_162: 5788772484255347809
+      petals_163: -5692986655246288160
+      petals_164: -8795296232708917201
+      petals_165: -4509005078557254066
+      petals_166: -3924997552485143711
+      petals_167: 8364635408636256743
+      petals_168: -7535395847792251037
+      petals_169: -2018017823237692383
+      petals_17: -773059176294485964
+      petals_18: -8194672256750949971
+      petals_19: -2954550827244382268
+      petals_2: -7209431980491301340
+      petals_20: 8681397878769750376
+      petals_21: 1219740455290547317
+      petals_22: 9192112294219523178
+      petals_23: 2380456394540454824
+      petals_24: -2053290700713145467
+      petals_25: 5231776039685288617
+      petals_26: 5493301173359168604
+      petals_27: 8905144738152276944
+      petals_28: -5977045599766052676
+      petals_29: 4191489546775648025
+      petals_3: 8329773495702740140
+      petals_30: -4373629701867422134
+      petals_31: -3773226767746591807
+      petals_32: 2140207167284390578
+      petals_33: 1368933592710519919
+      petals_34: 5435970788786058923
+      petals_35: 7127903951724782890
+      petals_36: -8736703246897773824
+      petals_37: -7098501810621997453
+      petals_38: 5176420390222144366
+      petals_39: 6323120421096144996
+      petals_4: 4870879447488391430
+      petals_40: 4101641065296775410
+      petals_41: -8175847862989416889
+      petals_42: -8350325345296761917
+      petals_43: -4680509950258582715
+      petals_44: 7738022844164347487
+      petals_45: 1002612416285464625
+      petals_46: 3767280199349949733
+      petals_47: -7533824126142790872
+      petals_48: 8478575576215346704
+      petals_49: 7860533221415294148
+      petals_5: -7005205098798051682
+      petals_50: 933759588354048589
+      petals_51: 1358683760138703219
+      petals_52: -3048916177839536338
+      petals_53: -2560651432373459259
+      petals_54: -2645670957546077678
+      petals_55: -4239627931897205352
+      petals_56: 3520696102414805005
+      petals_57: 1888364020029350537
+      petals_58: 408438856773282774
+      petals_59: -1594118064116744668
+      petals_6: -4670761774175104807
+      petals_60: -4332748550759772300
+      petals_61: -1247188733461709009
+      petals_62: 1879960102074237816
+      petals_63: -3095844057509861435
+      petals_64: 6530187272606713670
+      petals_65: 7623203673656546366
+      petals_66: -3246538428911334948
+      petals_67: 8148008848372917419
+      petals_68: 6732121573738591186
+      petals_69: -8516545082317138287
+      petals_7: -1794553674790462703
+      petals_70: -5374882821257394875
+      petals_71: -7938611793757452238
+      petals_72: -6613110769111790038
+      petals_73: 5210603081653040334
+      petals_74: 3477826847780025465
+      petals_75: -4846956184842561839
+      petals_76: -7421256155696580470
+      petals_77: -7896310001311733039
+      petals_78: -2793029962321240278
+      petals_79: 4201008764560470730
+      petals_8: -2780185384550222581
+      petals_80: -4582750578370484779
+      petals_81: -8787812682680593421
+      petals_82: -7744679621132159827
+      petals_83: -6146547125703280957
+      petals_84: -48095234380179179
+      petals_85: 1967159583830762472
+      petals_86: -5005320739742267131
+      petals_87: 113560077602455014
+      petals_88: 6233527946888931292
+      petals_89: 2242516639070016906
+      petals_9: -638250932581253724
+      petals_90: 6790882102815948283
+      petals_91: 3022877416702840425
+      petals_92: -299270316052307777
+      petals_93: -1120205903122278222
+      petals_94: -1029666137168110333
+      petals_95: 2494354465263289275
+      petals_96: 1317463916773653539
+      petals_97: 4679284526332619942
+      petals_98: -9150942056614176740
+      petals_99: 1582837571190100931
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

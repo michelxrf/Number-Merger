@@ -10,23 +10,55 @@ namespace NumberMerge.UI
     public sealed class BoardView : MonoBehaviour
     {
         [SerializeField] private TileView _tilePrefab;
-        [SerializeField] private float _cellSize = 84f;
-        [SerializeField] private float _spacing = 6f;
+
+        [Header("Grid")]
+        [Tooltip("Number of columns in the grid.")]
+        [SerializeField, Min(1)] private int _columnCount = 5;
+        [Tooltip("Number of visible rows. One extra overflow row is added above them.")]
+        [SerializeField, Min(1)] private int _visibleRowCount = 7;
+        [Tooltip("Gap between cells, in pixels.")]
+        [SerializeField, Min(0f)] private float _spacing = 6f;
+        [Tooltip("Cell size in pixels. 0 = fit the grid inside this object's RectTransform.")]
+        [SerializeField, Min(0f)] private float _cellSizeOverride = 0f;
         [SerializeField] private Color _cellColor = new Color(0.12f, 0.15f, 0.21f, 1f);
-        [SerializeField] private Color _entryCellColor = new Color(0.20f, 0.25f, 0.34f, 1f);
         [SerializeField] private float _insertDuration = 0.18f;
         [SerializeField] private float _mergeDuration = 0.12f;
         [SerializeField] private float _popDuration = 0.12f;
         [SerializeField] private float _gravityDuration = 0.12f;
 
-        private readonly TileView[,] _tileGrid = new TileView[BoardModel.TotalRowCount, BoardModel.ColumnCount];
         private readonly List<TileView> _spawnedTiles = new List<TileView>();
+        private TileView[,] _tileGrid;
         private RectTransform _rectTransform;
+        private float _cellSize;
+        private float _gridWidth;
+        private float _gridHeight;
         private bool _built;
+
+        public int ColumnCount => _columnCount;
+        public int VisibleRowCount => _visibleRowCount;
+        public int TotalRowCount => _visibleRowCount + 1;
+
+        // Size of one cell in pixels, valid after the grid is built.
+        public float CellSize
+        {
+            get
+            {
+                EnsureBuilt();
+                return _cellSize;
+            }
+        }
 
         public void Initialize(BoardModel board)
         {
             EnsureBuilt();
+
+            if (board.ColumnCount != ColumnCount || board.TotalRowCount != TotalRowCount)
+            {
+                Debug.LogError(
+                    "BoardView grid (" + ColumnCount + "x" + TotalRowCount + ") does not match the board model (" +
+                    board.ColumnCount + "x" + board.TotalRowCount + ").", this);
+            }
+
             SetBoard(BoardSnapshot.Capture(board));
         }
 
@@ -45,23 +77,23 @@ namespace NumberMerge.UI
         {
             EnsureBuilt();
 
-            float width = _rectTransform.sizeDelta.x;
             float step = _cellSize + _spacing;
-            float firstCenter = width * -0.5f + _cellSize * 0.5f;
+            float firstCenter = _gridWidth * -0.5f + _cellSize * 0.5f;
             int column = Mathf.RoundToInt((localPoint.x - firstCenter) / step);
-            return Mathf.Clamp(column, 0, BoardModel.ColumnCount - 1);
+            return Mathf.Clamp(column, 0, ColumnCount - 1);
         }
 
         public float GetColumnCenterX(int column)
         {
             EnsureBuilt();
-            return GetPosition(Mathf.Clamp(column, 0, BoardModel.ColumnCount - 1), 0).x;
+            return GetPosition(Mathf.Clamp(column, 0, ColumnCount - 1), 0).x;
         }
 
         public float GetDropStartLocalY()
         {
             EnsureBuilt();
-            return _rectTransform.sizeDelta.y * 0.5f + _cellSize * 0.5f + 2f;
+            // Center of the overflow row, which sits one spacing above the top visible row.
+            return _gridHeight * 0.5f + _cellSize * 0.5f + _spacing;
         }
 
         public Vector2 GetDropStartPosition(int column)
@@ -83,7 +115,7 @@ namespace NumberMerge.UI
                 move.Column,
                 move.InsertedRow,
                 move.Value,
-                BoardModel.TotalRowCount - 1,
+                TotalRowCount - 1,
                 false);
 
             if (inserted != null)
@@ -118,20 +150,38 @@ namespace NumberMerge.UI
             }
 
             _rectTransform = GetComponent<RectTransform>();
+            _tileGrid = new TileView[TotalRowCount, ColumnCount];
 
-            float width = BoardModel.ColumnCount * _cellSize + (BoardModel.ColumnCount - 1) * _spacing;
-            float height = BoardModel.TotalRowCount * _cellSize + (BoardModel.TotalRowCount - 1) * _spacing;
-            _rectTransform.sizeDelta = new Vector2(width, height);
+            _cellSize = ComputeCellSize();
+            _gridWidth = ColumnCount * _cellSize + (ColumnCount - 1) * _spacing;
+            _gridHeight = VisibleRowCount * _cellSize + (VisibleRowCount - 1) * _spacing;
 
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            // Only the visible rows get a background cell. The overflow row (index VisibleRowCount)
+            // exists in the model and is positioned just above the grid, where pieces enter.
+            for (int row = 0; row < VisibleRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < ColumnCount; column++)
                 {
                     CreateCell(column, row);
                 }
             }
 
             _built = true;
+        }
+
+        // The board keeps the size of its own RectTransform. The grid is centered in it, and the
+        // cell size is the largest one that fits both ways unless an override is set.
+        private float ComputeCellSize()
+        {
+            if (_cellSizeOverride > 0f)
+            {
+                return _cellSizeOverride;
+            }
+
+            Rect rect = _rectTransform.rect;
+            float fitWidth = (rect.width - (ColumnCount - 1) * _spacing) / ColumnCount;
+            float fitHeight = (rect.height - (VisibleRowCount - 1) * _spacing) / VisibleRowCount;
+            return Mathf.Max(1f, Mathf.Min(fitWidth, fitHeight));
         }
 
         private void CreateCell(int column, int row)
@@ -148,7 +198,7 @@ namespace NumberMerge.UI
             cellRect.anchoredPosition = GetPosition(column, row);
 
             var image = cellObject.GetComponent<Image>();
-            image.color = row == BoardModel.TotalRowCount - 1 ? _entryCellColor : _cellColor;
+            image.color = _cellColor;
             image.raycastTarget = false;
         }
 
@@ -186,9 +236,9 @@ namespace NumberMerge.UI
         {
             ClearTiles();
 
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < TotalRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < ColumnCount; column++)
                 {
                     int value = snapshot.GetValue(column, row);
                     if (value <= BoardModel.EmptyValue)
@@ -334,12 +384,12 @@ namespace NumberMerge.UI
 
             var moves = new List<TileMove>();
 
-            for (int column = 0; column < BoardModel.ColumnCount; column++)
+            for (int column = 0; column < ColumnCount; column++)
             {
                 var sourceRows = new List<int>();
                 var targetRows = new List<int>();
 
-                for (int row = 0; row < BoardModel.TotalRowCount; row++)
+                for (int row = 0; row < TotalRowCount; row++)
                 {
                     if (from.GetValue(column, row) > BoardModel.EmptyValue)
                     {
@@ -424,9 +474,9 @@ namespace NumberMerge.UI
                 }
             }
 
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < TotalRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < ColumnCount; column++)
                 {
                     _tileGrid[row, column] = null;
                 }
@@ -443,9 +493,9 @@ namespace NumberMerge.UI
 
         private void EnsureGridMatches(BoardSnapshot snapshot)
         {
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < TotalRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < ColumnCount; column++)
                 {
                     int value = snapshot.GetValue(column, row);
                     TileView tile = _tileGrid[row, column];
@@ -515,9 +565,9 @@ namespace NumberMerge.UI
 
             _spawnedTiles.Clear();
 
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < TotalRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < ColumnCount; column++)
                 {
                     _tileGrid[row, column] = null;
                 }
@@ -526,10 +576,9 @@ namespace NumberMerge.UI
 
         private Vector2 GetPosition(int column, int row)
         {
-            float width = _rectTransform.sizeDelta.x;
-            float height = _rectTransform.sizeDelta.y;
-            float x = width * -0.5f + _cellSize * 0.5f + column * (_cellSize + _spacing);
-            float y = height * -0.5f + _cellSize * 0.5f + row * (_cellSize + _spacing);
+            float step = _cellSize + _spacing;
+            float x = _gridWidth * -0.5f + _cellSize * 0.5f + column * step;
+            float y = _gridHeight * -0.5f + _cellSize * 0.5f + row * step;
             return new Vector2(x, y);
         }
 

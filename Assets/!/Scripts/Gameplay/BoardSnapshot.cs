@@ -4,7 +4,7 @@ namespace NumberMerge.Gameplay
 {
     public sealed class BoardSnapshot
     {
-        private readonly int[,] _values = new int[BoardModel.TotalRowCount, BoardModel.ColumnCount];
+        private readonly int[,] _values;
 
         public BoardSnapshot(int[,] values)
         {
@@ -13,14 +13,16 @@ namespace NumberMerge.Gameplay
                 throw new ArgumentNullException(nameof(values));
             }
 
-            if (values.GetLength(0) != BoardModel.TotalRowCount ||
-                values.GetLength(1) != BoardModel.ColumnCount)
+            if (values.GetLength(0) < 1 || values.GetLength(1) < 1)
             {
-                throw new ArgumentException("Snapshot dimensions do not match the board.", nameof(values));
+                throw new ArgumentException("Snapshot must have at least one row and one column.", nameof(values));
             }
 
-            Array.Copy(values, _values, values.Length);
+            _values = (int[,])values.Clone();
         }
+
+        public int TotalRowCount => _values.GetLength(0);
+        public int ColumnCount => _values.GetLength(1);
 
         public static BoardSnapshot Capture(BoardModel board)
         {
@@ -29,11 +31,11 @@ namespace NumberMerge.Gameplay
                 throw new ArgumentNullException(nameof(board));
             }
 
-            var values = new int[BoardModel.TotalRowCount, BoardModel.ColumnCount];
+            var values = new int[board.TotalRowCount, board.ColumnCount];
 
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < board.TotalRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < board.ColumnCount; column++)
                 {
                     values[row, column] = board.GetValue(column, row);
                 }
@@ -55,7 +57,7 @@ namespace NumberMerge.Gameplay
             ValidateColumn(column);
 
             int count = 0;
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < TotalRowCount; row++)
             {
                 if (_values[row, column] != BoardModel.EmptyValue)
                 {
@@ -70,7 +72,7 @@ namespace NumberMerge.Gameplay
         {
             ValidateColumn(column);
 
-            for (int row = BoardModel.TotalRowCount - 1; row >= 0; row--)
+            for (int row = TotalRowCount - 1; row >= 0; row--)
             {
                 if (_values[row, column] != BoardModel.EmptyValue)
                 {
@@ -86,17 +88,17 @@ namespace NumberMerge.Gameplay
             return GetValue(column, row) == BoardModel.EmptyValue;
         }
 
-        private static void ValidateColumn(int column)
+        private void ValidateColumn(int column)
         {
-            if (!BoardModel.IsValidColumn(column))
+            if (column < 0 || column >= ColumnCount)
             {
                 throw new ArgumentOutOfRangeException(nameof(column));
             }
         }
 
-        private static void ValidateRow(int row)
+        private void ValidateRow(int row)
         {
-            if (!BoardModel.IsValidRow(row))
+            if (row < 0 || row >= TotalRowCount)
             {
                 throw new ArgumentOutOfRangeException(nameof(row));
             }

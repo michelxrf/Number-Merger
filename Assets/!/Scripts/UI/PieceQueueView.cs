@@ -16,11 +16,13 @@ namespace NumberMerge.UI
         private RectTransform _nextRect;
         private Vector2 _currentPosition;
         private Vector2 _nextPosition;
+        private float _cellSize;
         private LTDescr _previewTween;
         private bool _initialized;
 
-        public void Initialize(int currentValue, int nextValue, Vector2 currentPosition, Vector2 nextPosition)
+        public void Initialize(int currentValue, int nextValue, Vector2 currentPosition, Vector2 nextPosition, float cellSize)
         {
+            _cellSize = cellSize;
             _currentPosition = currentPosition;
             _nextPosition = nextPosition;
 
@@ -150,6 +152,7 @@ namespace NumberMerge.UI
             tileRect.anchorMax = new Vector2(0.5f, 0.5f);
             tileRect.pivot = new Vector2(0.5f, 0.5f);
             tileRect.anchoredPosition = position;
+            tileRect.sizeDelta = new Vector2(_cellSize, _cellSize);
 
             tile.SetValue(value);
             tile.SetScale(scale);

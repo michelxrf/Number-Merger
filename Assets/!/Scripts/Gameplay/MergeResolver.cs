@@ -55,9 +55,9 @@ namespace NumberMerge.Gameplay
             var candidates = new List<MergeOutcome>();
             highestPriority = 0;
 
-            for (int row = 0; row < BoardModel.TotalRowCount; row++)
+            for (int row = 0; row < board.TotalRowCount; row++)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < board.ColumnCount; column++)
                 {
                     int value = board.GetValue(column, row);
                     if (value <= BoardModel.EmptyValue)
@@ -105,7 +105,7 @@ namespace NumberMerge.Gameplay
             int row,
             int value)
         {
-            if (!BoardModel.IsValidColumn(column) || !BoardModel.IsValidRow(row))
+            if (!board.IsValidColumn(column) || !board.IsValidRow(row))
             {
                 return;
             }

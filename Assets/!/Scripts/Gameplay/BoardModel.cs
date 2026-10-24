@@ -1,15 +1,53 @@
 using System;
+using System.Collections.Generic;
 
 namespace NumberMerge.Gameplay
 {
     public sealed class BoardModel
     {
-        public const int ColumnCount = 5;
-        public const int VisibleRowCount = 7;
-        public const int TotalRowCount = VisibleRowCount + 1;
+        public const int DefaultColumnCount = 5;
+        public const int DefaultVisibleRowCount = 7;
         public const int EmptyValue = 0;
 
-        private readonly int[,] _tiles = new int[TotalRowCount, ColumnCount];
+        private readonly int[,] _tiles;
+        private readonly Dictionary<int, int> _valueCounts = new Dictionary<int, int>();
+
+        public BoardModel()
+            : this(DefaultColumnCount, DefaultVisibleRowCount)
+        {
+        }
+
+        // visibleRowCount excludes the overflow row, which is always stored as the last row.
+        public BoardModel(int columnCount, int visibleRowCount)
+        {
+            if (columnCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnCount));
+            }
+
+            if (visibleRowCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(visibleRowCount));
+            }
+
+            ColumnCount = columnCount;
+            VisibleRowCount = visibleRowCount;
+            TotalRowCount = visibleRowCount + 1;
+            _tiles = new int[TotalRowCount, ColumnCount];
+        }
+
+        public int ColumnCount { get; }
+        public int VisibleRowCount { get; }
+        public int TotalRowCount { get; }
+
+        // Highest and second highest distinct piece values on the board (EmptyValue when absent).
+        public int HighestValue { get; private set; } = EmptyValue;
+        public int SecondHighestValue { get; private set; } = EmptyValue;
+
+        public int GetValueCount(int value)
+        {
+            return _valueCounts.TryGetValue(value, out int count) ? count : 0;
+        }
 
         public int GetValue(int column, int row)
         {
@@ -44,6 +82,7 @@ namespace NumberMerge.Gameplay
             }
 
             _tiles[targetRow, column] = value;
+            AddValue(value);
             row = targetRow;
             return true;
         }
@@ -55,7 +94,15 @@ namespace NumberMerge.Gameplay
                 return false;
             }
 
+            int previousValue = _tiles[row, column];
             _tiles[row, column] = value;
+
+            if (previousValue != EmptyValue)
+            {
+                RemoveValue(previousValue);
+            }
+
+            AddValue(value);
             return true;
         }
 
@@ -75,8 +122,58 @@ namespace NumberMerge.Gameplay
             }
 
             _tiles[row, column] = EmptyValue;
+            RemoveValue(currentValue);
             value = currentValue;
             return true;
+        }
+
+        private void AddValue(int value)
+        {
+            _valueCounts.TryGetValue(value, out int count);
+            _valueCounts[value] = count + 1;
+
+            // A new distinct value can change the top two values; otherwise nothing changes.
+            if (count == 0)
+            {
+                RecalculateExtremes();
+            }
+        }
+
+        private void RemoveValue(int value)
+        {
+            int count = GetValueCount(value) - 1;
+
+            if (count <= 0)
+            {
+                _valueCounts.Remove(value);
+                RecalculateExtremes();
+            }
+            else
+            {
+                _valueCounts[value] = count;
+            }
+        }
+
+        private void RecalculateExtremes()
+        {
+            int highest = EmptyValue;
+            int second = EmptyValue;
+
+            foreach (int value in _valueCounts.Keys)
+            {
+                if (value > highest)
+                {
+                    second = highest;
+                    highest = value;
+                }
+                else if (value > second)
+                {
+                    second = value;
+                }
+            }
+
+            HighestValue = highest;
+            SecondHighestValue = second;
         }
 
         public bool TryFindLowestEmptyRow(int column, out int row)
@@ -170,17 +267,17 @@ namespace NumberMerge.Gameplay
             return GetPieceCount(column) > VisibleRowCount;
         }
 
-        public static bool IsValidColumn(int column)
+        public bool IsValidColumn(int column)
         {
             return column >= 0 && column < ColumnCount;
         }
 
-        public static bool IsValidRow(int row)
+        public bool IsValidRow(int row)
         {
             return row >= 0 && row < TotalRowCount;
         }
 
-        private static void ValidateColumn(int column)
+        private void ValidateColumn(int column)
         {
             if (!IsValidColumn(column))
             {
@@ -188,7 +285,7 @@ namespace NumberMerge.Gameplay
             }
         }
 
-        private static void ValidateRow(int row)
+        private void ValidateRow(int row)
         {
             if (!IsValidRow(row))
             {

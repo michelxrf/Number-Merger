@@ -116,7 +116,7 @@ namespace NumberMerge.Gameplay
         {
             int count = 0;
 
-            for (int column = 0; column < BoardModel.ColumnCount; column++)
+            for (int column = 0; column < board.ColumnCount; column++)
             {
                 count += board.GetPieceCount(column);
             }
@@ -128,9 +128,9 @@ namespace NumberMerge.Gameplay
         {
             var builder = new StringBuilder();
 
-            for (int row = BoardModel.TotalRowCount - 1; row >= 0; row--)
+            for (int row = board.TotalRowCount - 1; row >= 0; row--)
             {
-                for (int column = 0; column < BoardModel.ColumnCount; column++)
+                for (int column = 0; column < board.ColumnCount; column++)
                 {
                     builder.Append(board.GetValue(column, row));
                     builder.Append(',');

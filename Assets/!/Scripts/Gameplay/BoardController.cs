@@ -5,9 +5,6 @@ namespace NumberMerge.Gameplay
 {
     public sealed class BoardController
     {
-        public const long MaxPossibleCascadePoints =
-            (long)BoardModel.TotalRowCount * BoardModel.ColumnCount * MergeMath.MaxTileValue;
-
         private readonly CascadeResolver _cascadeResolver;
         private readonly ScoreService _scoreService;
 
@@ -24,6 +21,11 @@ namespace NumberMerge.Gameplay
         }
 
         public BoardModel Board { get; }
+
+        // Upper bound for the points a single move can add: every cell merging at the maximum value.
+        public long MaxPossibleCascadePoints =>
+            (long)Board.TotalRowCount * Board.ColumnCount * MergeMath.MaxTileValue;
+
         public long CurrentScore => _scoreService.CurrentScore;
         public long Record => _scoreService.Record;
         public bool IsGameOver { get; private set; }
@@ -84,7 +86,7 @@ namespace NumberMerge.Gameplay
 
         private bool HasOverflowedColumn()
         {
-            for (int column = 0; column < BoardModel.ColumnCount; column++)
+            for (int column = 0; column < Board.ColumnCount; column++)
             {
                 if (Board.HasOverflow(column))
                 {

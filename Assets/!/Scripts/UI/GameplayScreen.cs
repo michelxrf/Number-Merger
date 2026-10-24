@@ -1,8 +1,9 @@
 using System.Collections;
 using NumberMerge.Gameplay;
+using NumberMerge.Managers;
 using UnityEngine;
+using TMPro;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 namespace NumberMerge.UI
 {
@@ -10,8 +11,8 @@ namespace NumberMerge.UI
     {
         [SerializeField] private BoardView _boardView;
         [SerializeField] private PieceQueueView _queueView;
-        [SerializeField] private Text _scoreText;
-        [SerializeField] private Text _statusText;
+        [SerializeField] private TMP_Text _scoreText;
+        [SerializeField] private TMP_Text _statusText;
 
         private BoardController _controller;
         private PieceGenerator _pieces;
@@ -22,10 +23,12 @@ namespace NumberMerge.UI
 
         private void Awake()
         {
-            _controller = new BoardController();
+            var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
+            _controller = new BoardController(board, new CascadeResolver(), new ScoreService());
             _pieces = new PieceGenerator();
             _boardRect = _boardView.GetComponent<RectTransform>();
 
+            _pieces.Reset(_controller.Board);
             _boardView.Initialize(_controller.Board);
             InitializeQueue();
             RefreshUi();
@@ -78,7 +81,8 @@ namespace NumberMerge.UI
                 return false;
             }
 
-            _pieces.Advance();
+            // The board is already resolved here, so the new piece uses the post-move state.
+            _pieces.Advance(_controller.Board);
             _queueView.Advance(_pieces.Next);
             _isAnimating = true;
             _statusText.text = "Resolvendo...";
@@ -147,7 +151,8 @@ namespace NumberMerge.UI
                 _pieces.Current,
                 _pieces.Next,
                 new Vector2(_boardRect.anchoredPosition.x, previewY),
-                new Vector2(280f, previewY + 2f));
+                new Vector2(280f, previewY + 2f),
+                _boardView.CellSize);
         }
 
         private IEnumerator AnimateMove(MoveResult move, int column)
