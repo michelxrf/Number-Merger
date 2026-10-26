@@ -18,6 +18,9 @@ namespace NumberMerge.Gameplay
             Board = board ?? throw new ArgumentNullException(nameof(board));
             _cascadeResolver = cascadeResolver ?? throw new ArgumentNullException(nameof(cascadeResolver));
             _scoreService = scoreService ?? throw new ArgumentNullException(nameof(scoreService));
+
+            // A restored board may already be in game over state.
+            IsGameOver = HasOverflowedColumn();
         }
 
         public BoardModel Board { get; }

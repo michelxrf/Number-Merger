@@ -6,6 +6,8 @@ namespace NumberMerge.UI
     public sealed class PieceQueueView : MonoBehaviour
     {
         [SerializeField] private TileView _tilePrefab;
+        [Tooltip("Same theme as the board, so queued pieces match the board pieces.")]
+        [SerializeField] private TileTheme _theme;
         [SerializeField] private float _nextScale = 0.7f;
         [SerializeField] private float _previewDuration = 0.12f;
         [SerializeField] private float _shiftDuration = 0.3f;
@@ -119,6 +121,7 @@ namespace NumberMerge.UI
                 return;
             }
 
+            _nextTile.transform.SetAsFirstSibling();
             _nextRect = _nextTile.GetComponent<RectTransform>();
             _nextTile.SetAlpha(1f);
             _nextTile.SetScale(_nextScale);
@@ -128,6 +131,7 @@ namespace NumberMerge.UI
         {
             _currentTile = CreateTile(value, _currentPosition, 1f, "QueueCurrent");
             _currentRect = _currentTile != null ? _currentTile.GetComponent<RectTransform>() : null;
+            _currentTile.transform.SetAsLastSibling();
         }
 
         private void CreateNext(int value)
@@ -154,7 +158,7 @@ namespace NumberMerge.UI
             tileRect.anchoredPosition = position;
             tileRect.sizeDelta = new Vector2(_cellSize, _cellSize);
 
-            tile.SetValue(value);
+            tile.SetValue(value, _theme);
             tile.SetScale(scale);
             tile.SetAlpha(1f);
             return tile;

@@ -1,0 +1,35 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using TMPro;
+
+namespace NumberMerge.UI
+{
+    public sealed class GameOverScreen : MonoBehaviour
+    {
+        private const string GameplaySceneName = "Gameplay";
+
+        [SerializeField] private GameObject _overlay;
+        [SerializeField] private TMP_Text _scoreText;
+        [SerializeField] private TMP_Text _recordText;
+        [SerializeField] private Button _restartButton;
+
+        private void Awake()
+        {
+            _restartButton.onClick.AddListener(Restart);
+            _overlay.SetActive(false);
+        }
+
+        public void Show(long score, long record)
+        {
+            _scoreText.text = "Pontos: " + score;
+            _recordText.text = "Recorde: " + record;
+            _overlay.SetActive(true);
+        }
+
+        private void Restart()
+        {
+            SceneManager.LoadScene(GameplaySceneName);
+        }
+    }
+}

@@ -10,6 +10,8 @@ namespace NumberMerge.UI
     public sealed class BoardView : MonoBehaviour
     {
         [SerializeField] private TileView _tilePrefab;
+        [Tooltip("Provides the slot sprite and the piece sprites and text color.")]
+        [SerializeField] private TileTheme _theme;
 
         [Header("Grid")]
         [Tooltip("Number of columns in the grid.")]
@@ -20,7 +22,6 @@ namespace NumberMerge.UI
         [SerializeField, Min(0f)] private float _spacing = 6f;
         [Tooltip("Cell size in pixels. 0 = fit the grid inside this object's RectTransform.")]
         [SerializeField, Min(0f)] private float _cellSizeOverride = 0f;
-        [SerializeField] private Color _cellColor = new Color(0.12f, 0.15f, 0.21f, 1f);
         [SerializeField] private float _insertDuration = 0.18f;
         [SerializeField] private float _mergeDuration = 0.12f;
         [SerializeField] private float _popDuration = 0.12f;
@@ -198,7 +199,8 @@ namespace NumberMerge.UI
             cellRect.anchoredPosition = GetPosition(column, row);
 
             var image = cellObject.GetComponent<Image>();
-            image.color = _cellColor;
+            image.sprite = _theme != null ? _theme.SlotSprite : null;
+            image.color = Color.white;
             image.raycastTarget = false;
         }
 
@@ -220,7 +222,7 @@ namespace NumberMerge.UI
             tileRect.sizeDelta = new Vector2(_cellSize, _cellSize);
             tileRect.anchoredPosition = GetPosition(column, startRow);
 
-            tile.SetValue(value);
+            tile.SetValue(value, _theme);
             tile.ResetVisual();
             _spawnedTiles.Add(tile);
 
@@ -517,7 +519,7 @@ namespace NumberMerge.UI
                         continue;
                     }
 
-                    tile.SetValue(value);
+                    tile.SetValue(value, _theme);
                     tile.ResetVisual();
                     tile.name = BuildTileName(column, row, value);
                     tile.GetComponent<RectTransform>().anchoredPosition = GetPosition(column, row);

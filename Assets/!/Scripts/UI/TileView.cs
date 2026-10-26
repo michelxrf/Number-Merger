@@ -11,7 +11,7 @@ namespace NumberMerge.UI
         [SerializeField] private TMP_Text _label;
         [SerializeField] private CanvasGroup _canvasGroup;
 
-        public void SetValue(int value)
+        public void SetValue(int value, TileTheme theme)
         {
             if (_background == null)
             {
@@ -24,6 +24,16 @@ namespace NumberMerge.UI
             }
 
             _label.text = value.ToString();
+
+            if (theme == null)
+            {
+                return;
+            }
+
+            // The sprite carries the color, so the image stays white to show it unchanged.
+            _background.sprite = theme.GetPieceSprite(value);
+            _background.color = Color.white;
+            _label.color = theme.TextColor;
         }
 
         public void SetScale(float scale)

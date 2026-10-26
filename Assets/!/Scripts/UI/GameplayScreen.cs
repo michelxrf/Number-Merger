@@ -1,6 +1,7 @@
 using System.Collections;
 using NumberMerge.Gameplay;
 using NumberMerge.Managers;
+using NumberMerge.Save;
 using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
@@ -13,6 +14,7 @@ namespace NumberMerge.UI
         [SerializeField] private PieceQueueView _queueView;
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _statusText;
+        [SerializeField] private GameOverScreen _gameOverScreen;
 
         private BoardController _controller;
         private PieceGenerator _pieces;
@@ -23,20 +25,56 @@ namespace NumberMerge.UI
 
         private void Awake()
         {
-            var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
-            _controller = new BoardController(board, new CascadeResolver(), new ScoreService());
-            _pieces = new PieceGenerator();
             _boardRect = _boardView.GetComponent<RectTransform>();
 
-            _pieces.Reset(_controller.Board);
+            LoadOrStartGame();
+
             _boardView.Initialize(_controller.Board);
             InitializeQueue();
             RefreshUi();
+
+            // The player has control from the start, so save the initial state now.
+            SaveProgress();
+        }
+
+        // Restores the saved board when there is one; otherwise starts a new game with the saved record.
+        private void LoadOrStartGame()
+        {
+            long record = SaveSystem.LoadRecord();
+            BoardState saved = SaveSystem.LoadBoardState();
+
+            if (saved != null &&
+                saved.TryRestore(out BoardModel restored, out long score) &&
+                restored.ColumnCount == _boardView.ColumnCount &&
+                restored.VisibleRowCount == _boardView.VisibleRowCount)
+            {
+                _pieces = new PieceGenerator();
+                _pieces.Restore(saved.CurrentPiece, saved.NextPiece);
+                _controller = new BoardController(restored, new CascadeResolver(), new ScoreService(record, score));
+
+                if (_controller.IsGameOver)
+                {
+                    SaveSystem.DeleteBoardState();
+                }
+
+                return;
+            }
+
+            // Invalid or mismatched saved data is discarded.
+            if (saved != null)
+            {
+                SaveSystem.DeleteBoardState();
+            }
+
+            var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
+            _controller = new BoardController(board, new CascadeResolver(), new ScoreService(record));
+            _pieces = new PieceGenerator();
+            _pieces.Reset(board);
         }
 
         private void Update()
         {
-            if (_controller == null || _controller.IsGameOver || _isAnimating)
+            if (DebugScreen.IsOpen || _controller == null || _controller.IsGameOver || _isAnimating)
             {
                 return;
             }
@@ -84,6 +122,13 @@ namespace NumberMerge.UI
             // The board is already resolved here, so the new piece uses the post-move state.
             _pieces.Advance(_controller.Board);
             _queueView.Advance(_pieces.Next);
+
+            // Game over is final: remove the saved board as soon as it happens, not after the animation.
+            if (_controller.IsGameOver)
+            {
+                SaveSystem.DeleteBoardState();
+            }
+
             _isAnimating = true;
             _statusText.text = "Resolvendo...";
             StartCoroutine(AnimateMove(move, column));
@@ -151,7 +196,7 @@ namespace NumberMerge.UI
                 _pieces.Current,
                 _pieces.Next,
                 new Vector2(_boardRect.anchoredPosition.x, previewY),
-                new Vector2(280f, previewY + 2f),
+                new Vector2(280f, previewY + 75f),
                 _boardView.CellSize);
         }
 
@@ -159,16 +204,43 @@ namespace NumberMerge.UI
         {
             yield return _boardView.PlayMove(move, _boardView.GetDropStartPosition(column));
 
+            // Save right before the player regains control, so the saved state is the one they can act on.
+            SaveProgress();
             _isAnimating = false;
             RefreshUi();
+        }
+
+        // Called right before the player regains control. Record is always saved.
+        // The board is saved in its playable state, or deleted on game over.
+        private void SaveProgress()
+        {
+            SaveSystem.SaveRecord(_controller.Record);
+
+            if (_controller.IsGameOver)
+            {
+                SaveSystem.DeleteBoardState();
+                return;
+            }
+
+            SaveSystem.SaveBoardState(BoardState.Capture(
+                _controller.Board,
+                _pieces.Current,
+                _pieces.Next,
+                _controller.CurrentScore));
         }
 
         private void RefreshUi()
         {
             _scoreText.text = "Pontos: " + _controller.CurrentScore + "    Recorde: " + _controller.Record;
-            _statusText.text = _controller.IsGameOver
-                ? "GAME OVER"
-                : "Toque e arraste para escolher a coluna";
+
+            if (_controller.IsGameOver)
+            {
+                _statusText.gameObject.SetActive(false);
+                _gameOverScreen.Show(_controller.CurrentScore, _controller.Record);
+                return;
+            }
+
+            _statusText.text = "Toque e arraste para escolher a coluna";
         }
     }
 }

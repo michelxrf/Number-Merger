@@ -26,6 +26,13 @@ namespace NumberMerge.Gameplay
             Next = GenerateValue(board);
         }
 
+        // Restores a saved queue instead of generating a new one.
+        public void Restore(int current, int next)
+        {
+            Current = current;
+            Next = next;
+        }
+
         // Promotes Next to Current and generates a new Next from the current board state.
         public void Advance(BoardModel board)
         {
