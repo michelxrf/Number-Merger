@@ -1,8 +1,9 @@
 # Number Merge — Documentação do Estado Atual
 
-> Última atualização: 2026-10-23  
+> Última atualização: 2026-10-27  
 > Projeto: `D:\Projects\Number Merger`  
-> Unity: `6000.3.10f1`
+> Unity: `6000.3.10f1`  
+> Último commit incluído: `9d541ef bug fix`
 
 ## Sumário
 
@@ -13,65 +14,63 @@
 5. [Arquitetura](#5-arquitetura)
 6. [Regras do jogo](#6-regras-do-jogo)
 7. [Fluxo de uma jogada](#7-fluxo-de-uma-jogada)
-8. [Implementação por parte](#8-implementação-por-parte)
-9. [Cena e layout](#9-cena-e-layout)
-10. [Input e animações](#10-input-e-animações)
-11. [Como executar e testar](#11-como-executar-e-testar)
-12. [Verificações realizadas](#12-verificações-realizadas)
-13. [Limitações e próximos passos](#13-limitações-e-próximos-passos)
-14. [Referência rápida](#14-referência-rápida)
+8. [Persistência](#8-persistência)
+9. [Implementação por parte](#9-implementação-por-parte)
+10. [Cena e layout](#10-cena-e-layout)
+11. [Input e animações](#11-input-e-animações)
+12. [Como executar e testar](#12-como-executar-e-testar)
+13. [Verificações realizadas](#13-verificações-realizadas)
+14. [Limitações e próximos passos](#14-limitações-e-próximos-passos)
+15. [Referência rápida](#15-referência-rápida)
+16. [Mudanças desde a versão anterior](#16-mudanças-desde-a-versão-anterior)
 
 ## 1. Visão geral
 
-**Number Merge** é um protótipo de jogo de combinação de números em um tabuleiro vertical. O jogador recebe peças `2` ou `4`, escolhe uma coluna por toque/arraste e solta a peça. Peças iguais adjacentes se combinam, geram uma peça maior e podem iniciar cascatas.
+**Number Merge** é um protótipo de jogo de combinação de números em um tabuleiro vertical. O jogador recebe peças de valor `2` ou maior (conforme o estado do tabuleiro), escolhe uma coluna arrastando o ponteiro e solta a peça. Peças iguais adjacentes se combinam, geram uma peça maior e podem iniciar cascatas.
 
-O estado atual é um **protótipo jogável da cena Gameplay**, com:
+O estado atual é um **protótipo jogável**, com:
 
-- Tabuleiro 5×8.
-- Geração de peças 2/4.
-- Combinação por vizinhança ortogonal.
-- Cascatas com gravidade.
-- Pontuação e recorde em memória.
-- Fila visual de duas peças.
-- Posicionamento por toque/arraste, sem botões de coluna.
-- Animações de inserção e de fila com LeanTween.
-- Condição de game over.
+- Tabuleiro de 5 colunas e 7 linhas visíveis, mais uma linha de overflow.
+- Geração de peças adaptativa, baseada nas peças presentes no tabuleiro.
+- Combinação por vizinhança ortogonal, com cascatas e gravidade.
+- Pontuação e recorde, ambos persistidos com `PlayerPrefs`.
+- Retomada da partida em andamento ao reabrir o jogo.
+- Tela de game over com reinício.
+- Overlay de debug (tecla F12).
+- Música de fundo via `AudioManager`.
 
-A cena `MainMenu` ainda é apenas um placeholder com câmera, e não existe fluxo de menu ou reinício.
+A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu.
 
 ## 2. Estado atual
 
 ### Funciona
 
 - Inserção na célula vazia mais baixa da coluna.
-- Rejeição de coluna cheia.
-- Combinação de 2 a 5 peças iguais adjacentes.
-- Resultado `valor × (participantes − 1) × 2`.
-- Limite de peça `8192`.
-- Prioridade por maior número de vizinhos iguais.
-- Escolha aleatória entre candidatos de mesma prioridade.
-- Gravidade e múltiplas cascatas.
-- Detecção de game over por overflow da coluna.
+- Rejeição de coluna cheia (a peça atual não é consumida).
+- Combinação de 2 a 5 peças iguais adjacentes, com resultado limitado a `8192`.
+- Prioridade por maior número de vizinhos iguais; empate resolvido aleatoriamente.
+- Gravidade e múltiplas cascatas, com proteções contra progresso inválido, ciclos e loops longos.
+- Geração de peças adaptativa (`SpawnTable`).
+- Fila de duas peças sempre visível: atual (centro) e próxima (canto).
+- Prévia da peça atual acompanhando a coluna escolhida durante o arraste.
 - Pontuação somando o valor resultante de cada combinação.
-- Recorde em memória durante a sessão.
-- Fila de duas peças sempre ativa.
-- Prévia da peça atual sobre a coluna mais próxima.
-- Inserção ao soltar.
-- Remoção dos botões de coluna.
-- Cena Gameplay salva e sem referências ausentes.
-- Compilação sem erros.
+- Recorde persistido em `PlayerPrefs`.
+- Salvamento da partida após cada jogada válida; retomada ao abrir o jogo.
+- Game over quando uma coluna fica com 8 peças; o save da partida é apagado.
+- Tela de game over com pontos e recorde, e botão de reinício.
+- Overlay de debug (F12) com fechar, reiniciar e limpar dados.
+- Música de fundo tocada pelo `AudioManager` (persistente entre cenas).
+- Fundo em tela cheia (`FullscreenBackground`) com ajuste "cover".
+- Cena `Gameplay` como única cena em Build Settings.
 
-### Ainda não implementado ou pendente
+### Pendente ou não implementado
 
-- Cena `MainMenu` funcional.
-- Transição menu → gameplay.
-- Reinício após game over.
-- Persistência de recorde entre sessões.
-- Áudio integrado.
+- Cena `MainMenu` funcional e transição menu → gameplay. (O objeto `ContinueButton` existe na cena `Gameplay`, mas nenhum script do projeto o referencia.)
+- Efeitos sonoros: `PlaySfx` e `PlayUi` existem, mas nada os chama ainda.
+- Tipo de peça "bad tile": o campo `BadTileSprite` existe no tema, mas a mecânica não foi implementada.
 - Teste automatizado do caminho real de toque no Editor.
-- Build configurado com a cena Gameplay.
-- Testes automatizados de lógica.
-- Ajuste definitivo de responsividade/orientação.
+- Testes automatizados de lógica do projeto (há apenas os testes de exemplo do próprio LeanTween).
+- Ajuste definitivo de responsividade e orientação.
 
 ## 3. Tecnologias e configuração
 
@@ -79,88 +78,99 @@ A cena `MainMenu` ainda é apenas um placeholder com câmera, e não existe flux
 |---|---|
 | Unity | `6000.3.10f1` |
 | Render pipeline | URP 2D |
-| UI | uGUI 2.0, `UnityEngine.UI.Text` |
-| Fonte | `LegacyRuntime.ttf` |
-| Input | Input System 1.18.0 |
+| UI | uGUI 2.0 com TextMeshPro (`TMP_Text`) |
+| Fonte | `ShadowsIntoLight-Regular SDF` |
+| Input | Input System (leitura direta de `Pointer.current` e `Keyboard.current`) |
 | `activeInputHandler` | `1` (Input System apenas) |
 | Canvas | Overlay |
-| Referência do CanvasScaler | `1080×1920`, match `0.5` |
-| Resolução usada na verificação | `1920×1080` |
-| Animações novas | LeanTween em `Assets/LeanTween` |
-| Assembly | Sem `.asmdef`; runtime em `Assembly-CSharp` |
-| Testes | Nenhum teste automatizado no projeto |
+| Referência do CanvasScaler | `1080×1920`, match `0.5` (valor anterior, não reverificado) |
+| Áudio | `AudioMixer` com grupos Music, Sfx e Ui |
+| Animações | LeanTween em `Assets/LeanTween` |
+| Assembly | Sem `.asmdef`; código do jogo em `Assembly-CSharp` |
+| Namespaces | `NumberMerge.Gameplay`, `NumberMerge.Managers`, `NumberMerge.Save`, `NumberMerge.UI`, `NumberMerge.Audio` |
+| Testes | Nenhum teste automatizado próprio do projeto |
 
-Observação: a referência do CanvasScaler é retrato (`1080×1920`), mas a cena foi montada e verificada em landscape (`1920×1080`). Se o alvo final for retrato, o layout precisa ser revisto.
+Observação: a referência do CanvasScaler é retrato (`1080×1920`), mas o layout foi montado e verificado em landscape (`1920×1080`). Se o alvo final for retrato, o layout precisa ser revisto.
 
 ## 4. Estrutura de arquivos
 
 ```text
 Assets/
   !/
+    Audio/
+      BGM/                  Música de fundo
+      SFX/                  tile click.mp3 (ainda não utilizado)
+      MainMixer.mixer       AudioMixer com os grupos Music, Sfx e Ui
+    Fonts/                  ShadowsIntoLight (TTF e SDF)
+    Icon/                   Ícones
     Prefabs/
-      Tile.prefab
+      Tile.prefab           Prefab base do tile
+      UI/DebugScreen.prefab Overlay de debug
     Scenes/
-      Gameplay.unity
-      MainMenu.unity
+      Gameplay.unity        Cena jogável
+      MainMenu.unity        Placeholder de menu
     Scripts/
+      Audio/
+        AudioManager.cs
       Gameplay/
-        BoardController.cs
-        BoardModel.cs
-        BoardPosition.cs
-        BoardSnapshot.cs
-        CascadeResolver.cs
-        CascadeResult.cs
-        CascadeStep.cs
-        MergeMath.cs
-        MergeOutcome.cs
-        MergeResolver.cs
-        MoveResult.cs
-        PieceGenerator.cs
-        RandomSource.cs
+        BoardController.cs, BoardModel.cs, BoardPosition.cs, BoardSnapshot.cs,
+        CascadeResolver.cs, CascadeResult.cs, CascadeStep.cs,
+        MergeMath.cs, MergeOutcome.cs, MergeResolver.cs, MoveResult.cs,
+        PieceGenerator.cs, RandomSource.cs, SpawnTable.cs
       Managers/
         ScoreService.cs
+      Save/
+        BoardState.cs, SaveSystem.cs
       UI/
-        BoardView.cs
-        GameplayScreen.cs
-        PieceQueueView.cs
-        TileView.cs
-  LeanTween/
+        BoardView.cs, DebugScreen.cs, FullscreenBackground.cs,
+        GameOverScreen.cs, GameplayScreen.cs, PieceQueueView.cs,
+        TileTheme.cs, TileView.cs
+    Sprites/                Tiles, slot, fundos, partículas
+    Themes/
+      DefaultTileTheme.asset  Tema padrão do tabuleiro e das peças
+  LeanTween/                Biblioteca de animações (inclui pasta Testing com exemplos próprios)
 ProjectSettings/
   ProjectSettings.asset
-  EditorBuildSettings.asset
+  EditorBuildSettings.asset  Build: apenas Gameplay
 ```
 
-Não existem scripts de Editor, assemblies separadas ou testes no estado atual.
+Não existem scripts de Editor, assemblies separadas ou testes próprios do projeto no estado atual.
 
 ## 5. Arquitetura
 
 A implementação separa lógica de jogo e apresentação:
 
 ```text
-Pointer.current
+Pointer.current / Keyboard.current
       │
       ▼
-GameplayScreen ──────────────► PieceGenerator
+GameplayScreen ──────────────► PieceGenerator ──► SpawnTable
       │                              │
       │                              ▼
       ├──────────────────────► PieceQueueView
       │                              │
       ▼                              ▼
-BoardController ─────────────► BoardView
+BoardController ─────────────► BoardView ──► TileView ──► TileTheme
       │                              │
-      ├── BoardModel                 ├── TileView
-      ├── CascadeResolver            └── LeanTween
+      ├── BoardModel                 └── LeanTween / coroutines
+      ├── CascadeResolver
       │     └── MergeResolver
       └── ScoreService
+
+GameplayScreen ──► SaveSystem ──► PlayerPrefs (BoardState em JSON, recorde)
+GameOverScreen / DebugScreen ──► SceneManager (recarrega Gameplay)
+AudioManager (singleton, DontDestroyOnLoad) ──► AudioMixer
 ```
 
 ### Camadas
 
-- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `PieceGenerator`.
-- **Apresentação:** `GameplayScreen`, `BoardView`, `PieceQueueView`, `TileView`.
+- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `PieceGenerator`, `SpawnTable`, `RandomSource`.
+- **Persistência:** `SaveSystem`, `BoardState`.
+- **Apresentação:** `GameplayScreen`, `BoardView`, `PieceQueueView`, `TileView`, `TileTheme`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
+- **Áudio:** `AudioManager`.
 - **Dados de resultado:** `BoardSnapshot`, `MoveResult`, `CascadeResult`, `CascadeStep`, `MergeOutcome`, `BoardPosition`.
 
-A lógica pura não depende de `MonoBehaviour` e recebe dependências por construtor quando necessário. `GameplayScreen` é o ponto de composição da cena.
+A lógica pura não depende de `MonoBehaviour` e recebe dependências por construtor (`IRandomSource` para aleatoriedade). `GameplayScreen` é o ponto de composição da cena.
 
 ## 6. Regras do jogo
 
@@ -169,28 +179,38 @@ A lógica pura não depende de `MonoBehaviour` e recebe dependências por constr
 - **5 colunas** (`0..4`).
 - **8 linhas totais** (`0..7`), contando de baixo para cima.
 - **7 linhas visíveis** (`0..6`).
-- A linha `7` é a linha de entrada/overflow.
+- A linha `7` é a linha de entrada e de overflow.
 - A peça é inserida na célula vazia mais baixa da coluna.
 - Uma coluna com 8 peças está cheia e rejeita novas peças.
-- Após a resolução, se qualquer coluna tiver mais de 7 peças, o jogo termina.
+- Após a resolução da jogada, se qualquer coluna tiver mais de 7 peças (ou seja, 8), o jogo termina.
 
 ### Peças
 
-- Valores gerados: `2` e `4`.
-- Probabilidade: `2` = 90%, `4` = 10%.
-- A fila mantém `Current` e `Next`.
-- `Advance()` promove `Next` para `Current` e gera um novo `Next`.
+- A fila mantém `Current` (peça a ser jogada) e `Next` (próxima).
+- `Advance()` promove `Next` para `Current` e gera um novo `Next` com base no tabuleiro **após** a jogada.
+- Ao iniciar uma partida, `Current` e `Next` são gerados a partir do tabuleiro vazio.
+
+### Geração de peças (`SpawnTable`)
+
+A probabilidade de cada valor depende das peças presentes no tabuleiro:
+
+1. **Limite:** só nascem valores **menores que a segunda maior peça distinta** do tabuleiro. Assim, a maior e a segunda maior peças nunca nascem. Se houver apenas um valor distinto, ele é excluído.
+2. **Pesos:** cada valor candidato tem peso igual à quantidade dessa peça no tabuleiro.
+3. **Mínimo do `2`:** o valor `2` sempre tem pelo menos **20%** de chance (`MinimumValueChance`), mesmo que não esteja no tabuleiro. Se a parcela proporcional for menor, o `2` recebe 20% e os demais dividem os 80% restantes proporcionalmente.
+4. **Caso sem alternativas:** se o `2` for o único candidato possível, ele nasce com 100%.
+
+Exemplo: tabuleiro com `2` ×3, `4` ×1 e `8` ×1. Limite = segunda maior = `4`, então só o `2` é candidato, com 100%. Com `2` ×0, `4` ×1, `8` ×1, o limite é `4`, e só o `2` pode nascer (100%).
 
 ### Combinação
 
 - Apenas peças iguais adjacentes **ortogonalmente** (cima, baixo, esquerda, direita).
-- Participantes: mínimo 2, máximo 5.
-- Resultado: `valor × (participantes − 1) × 2`.
-- Valor máximo: `8192`.
-- Peças com valor `8192` não combinam.
-- Prioridade: maior número de vizinhos iguais.
-- Empate: escolha aleatória entre os candidatos da mesma prioridade.
-- Após cada combinação, a gravidade é aplicada e o processo continua.
+- Participantes: mínimo 2, máximo 5 (a peça de origem mais até 4 vizinhos).
+- Resultado: `valor × 2^(participantes − 1)`, ou seja, dobra a cada participante extra.
+- Resultado máximo: `8192`. Uma combinação cujo resultado ultrapassaria `8192` não acontece; peças de valor `8192` não combinam.
+- Prioridade: candidatos com mais vizinhos iguais são resolvidos primeiro.
+- Empate: sorteio entre os candidatos da mesma prioridade.
+- A peça de origem recebe o resultado e os vizinhos são removidos.
+- Após cada combinação, a gravidade é aplicada e o processo continua até não haver mais combinações.
 
 Exemplos:
 
@@ -198,309 +218,310 @@ Exemplos:
 |---|---:|---:|---:|
 | 2 | 2 | 4 | 4 |
 | 2 | 3 | 8 | 8 |
-| 2 | 4 | 12 | 12 |
+| 2 | 4 | 16 | 16 |
+| 2 | 5 | 32 | 32 |
 | 4 | 2 | 8 | 8 |
 | 4 | 3 | 16 | 16 |
 
-### Pontuação
+### Pontuação e recorde
 
 - Cada combinação adiciona o **valor resultante** à pontuação.
-- A pontuação é acumulada por toda a cascata.
-- `ScoreService` usa `long` e protege contra overflow.
-- O recorde é atualizado quando a pontuação atual o supera.
-- O recorde não é persistido em disco.
+- A pontuação é acumulada por toda a cascata da jogada.
+- `ScoreService` usa `long` e verifica overflow antes de somar (`CanAdd`/`TryAdd`). Antes de cada jogada, `BoardController` confirma que a pontuação suporta o pior caso possível (`MaxPossibleCascadePoints`: 8 linhas × 5 colunas × 8192).
+- O recorde é atualizado sempre que a pontuação atual o supera e é salvo junto com a partida (ver seção 8).
+
+### Game over
+
+- Ocorre quando, após uma jogada, alguma coluna tem 8 peças.
+- A tela de game over mostra pontos e recorde e oferece reinício.
+- Ao acontecer, o save da partida em andamento é apagado: não é possível retomar uma partida terminada.
 
 ## 7. Fluxo de uma jogada
 
-1. O jogador pressiona a tela.
-2. `GameplayScreen.Update` detecta `Pointer.current.press.wasPressedThisFrame`.
-3. `BeginPreview` ativa a prévia, reposiciona a peça atual e muda o status para “Solte para inserir”.
-4. O arraste chama `UpdatePreview`, que calcula a coluna mais próxima e move a peça com LeanTween.
-5. Ao soltar, `CommitPreview` chama `PlayColumn(coluna)`.
-6. `BoardController.TryPlay` valida game over e overflow de pontuação, captura o snapshot inicial e insere a peça.
-7. `CascadeResolver.Resolve` aplica gravidade, resolve combinações e devolve a cascata completa.
-8. `BoardController` soma os pontos, atualiza o recorde e verifica overflow.
-9. Em caso de sucesso:
-   - `PieceGenerator.Advance()` gera a próxima peça.
-   - `PieceQueueView.Advance()` promove a segunda peça e cria uma nova.
-   - `BoardView.PlayMove()` anima inserção, gravidade e combinações.
-10. Em caso de falha:
+1. O jogador pressiona a tela. `GameplayScreen.Update` detecta `Pointer.current.press.wasPressedThisFrame`.
+2. `BeginPreview` ativa a prévia, traz a peça atual para frente e muda o status para “Solte para inserir”.
+3. O arraste chama `UpdatePreview`, que calcula a coluna mais próxima e move a peça com LeanTween.
+4. Ao soltar, `CommitPreview` chama `PlayColumn(coluna)`.
+5. `BoardController.TryPlay` bloqueia se o jogo acabou ou se a pontuação não suporta o pior caso, captura o estado antes, insere a peça e resolve a cascata.
+6. `CascadeResolver.Resolve` aplica gravidade, resolve combinações uma a uma e devolve todas as etapas.
+7. `BoardController` soma os pontos, atualiza o recorde e verifica overflow (`IsGameOver`).
+8. Em caso de sucesso:
+   - `PieceGenerator.Advance(board)` promove a próxima peça e gera uma nova, usando o tabuleiro já resolvido.
+   - `PieceQueueView.Advance` promove a segunda peça e cria uma nova.
+   - Se houve game over, o save é apagado imediatamente.
+   - `BoardView.PlayMove` anima inserção, gravidade e combinações.
+9. Ao terminar a animação, `SaveProgress` salva o recorde e o estado da partida (ou apaga o save em game over), o input volta ao jogador e a interface é atualizada.
+10. Em caso de falha (coluna cheia):
     - A fila volta ao centro.
     - O status mostra “Coluna cheia”.
     - A peça atual não é consumida.
 
-## 8. Implementação por parte
+Durante animação, game over, overlay de debug aberto ou arraste sem coluna válida, o input é ignorado.
 
-### 8.1 `BoardModel`
+## 8. Persistência
+
+Arquivo: `Assets/!/Scripts/Save/SaveSystem.cs`. Usa `PlayerPrefs`, que funciona em Windows, Android e WebGL.
+
+| Chave | Conteúdo | Quando é salva | Quando é apagada |
+|---|---|---|---|
+| `NumberMerge.Record` | Recorde como texto (`long`) | Ao final de cada jogada e na inicialização | Pelo overlay de debug |
+| `NumberMerge.Board` | `BoardState` em JSON | Na inicialização e ao final de cada jogada válida | Em game over, ou quando o dado é inválido |
+
+`BoardState` guarda:
+
+- Dimensões do tabuleiro (`ColumnCount`, `VisibleRowCount`).
+- Todas as células, incluindo a linha de overflow, em ordem linha-major.
+- Peça atual e próxima.
+- Pontuação como texto (`JsonUtility` não suporta `long`).
+
+Ao iniciar `Gameplay`:
+
+1. Carrega o recorde.
+2. Se houver um `BoardState` válido, com dimensões compatíveis e peças maiores que zero, restaura o tabuleiro, a fila e a pontuação. Se o estado restaurado já for game over, o save é apagado.
+3. Se o dado for inválido ou incompatível, ele é descartado e uma nova partida começa.
+
+Observação: o save é gravado depois que a animação termina. Se o jogo for fechado no meio de uma jogada, a partida é retomada a partir do estado anterior à jogada, com a mesma peça atual.
+
+## 9. Implementação por parte
+
+### 9.1 `BoardModel`
 
 Arquivo: `Assets/!/Scripts/Gameplay/BoardModel.cs`
 
-Responsável pelo estado bruto do tabuleiro:
-
-- Matriz `int[TotalRowCount, ColumnCount]`.
+- Matriz `int[TotalRowCount, ColumnCount]`; `0` é célula vazia.
 - `TryInsert` encontra a linha vazia mais baixa.
 - `ApplyGravity` compacta as peças para baixo.
 - `GetPieceCount`, `GetHeight`, `IsColumnFull`, `HasOverflow`.
 - `TrySetValue` e `TryRemove` são usados pela resolução de combinações.
+- Mantém contagem por valor (`GetValueCount`) e os dois maiores valores distintos (`HighestValue`, `SecondHighestValue`), usados pela `SpawnTable`.
 
 A linha `0` é a base; a linha `7` é o overflow.
 
-### 8.2 Snapshots e resultados
+### 9.2 Snapshots e resultados
 
-Arquivos:
+Arquivos: `BoardSnapshot.cs`, `MoveResult.cs`, `CascadeResult.cs`, `CascadeStep.cs`, `MergeOutcome.cs`, `BoardPosition.cs`.
 
-- `BoardSnapshot.cs`
-- `MoveResult.cs`
-- `CascadeResult.cs`
-- `CascadeStep.cs`
-- `MergeOutcome.cs`
-- `BoardPosition.cs`
+- `BoardSnapshot` copia o tabuleiro para animar transições sem alterar o modelo vivo.
+- `MoveResult` guarda: tabuleiro antes da jogada, após a inserção, coluna, valor, linha inserida, cascata completa e tabuleiro final.
+- `CascadeStep` guarda snapshots antes da combinação, depois da combinação e depois da gravidade.
+- `CascadeResult` guarda as combinações, o número de etapas, as etapas, o snapshot após a primeira gravidade e o tabuleiro final.
+- `MergeOutcome` descreve origem, valor original, valor resultante, vizinhos removidos e quantidade de participantes.
 
-`BoardSnapshot` copia o tabuleiro para permitir animar transições sem alterar o modelo vivo.
+### 9.3 Geração de peças
 
-`MoveResult` guarda:
+Arquivos: `PieceGenerator.cs`, `SpawnTable.cs`, `RandomSource.cs`
 
-- Tabuleiro antes da jogada.
-- Tabuleiro após a inserção.
-- Coluna, valor e linha inserida.
-- Resultado completo da cascata.
-- Tabuleiro final.
+- `PieceGenerator.Reset(board)` gera `Current` e `Next` a partir do tabuleiro.
+- `Restore(current, next)` restaura a fila salva.
+- `Advance(board)` promove `Next` e gera um novo `Next`.
+- `SpawnTable.Build(board)` calcula as probabilidades (ver seção 6). `SpawnTable.Pick` sorteia com resolução de 1.000.000.
+- `IRandomSource` permite substituir o gerador. `SystemRandomSource` usa `System.Random`.
 
-`CascadeStep` guarda os snapshots de cada etapa:
+### 9.4 Combinação
 
-- Antes da combinação.
-- Depois da combinação.
-- Depois da gravidade.
-
-`MergeOutcome` descreve uma combinação:
-
-- Célula de origem.
-- Valor original.
-- Valor resultante.
-- Vizinhos removidos.
-- Quantidade de participantes.
-
-### 8.3 Geração de peças
-
-Arquivo: `Assets/!/Scripts/Gameplay/PieceGenerator.cs`
-
-- `Current` e `Next` são gerados no construtor.
-- `Advance()` promove `Next`.
-- `Reset()` recria a fila.
-- `IRandomSource` permite substituir o gerador aleatório.
-- `SystemRandomSource` usa `System.Random`.
-
-A chance de `4` é controlada por `FourChancePercent = 10`.
-
-### 8.4 Combinação
-
-Arquivos:
-
-- `MergeMath.cs`
-- `MergeResolver.cs`
+Arquivos: `MergeMath.cs`, `MergeResolver.cs`
 
 `MergeMath` centraliza:
 
 - Valor máximo `8192`.
-- Participantes mínimos e máximos.
-- Cálculo do resultado.
+- Participantes mínimos (`2`) e máximos (`5`).
+- Cálculo do resultado: `valor << (participantes − 1)`, rejeitado se passar de `8192`.
 
 `MergeResolver.TryResolveOnce`:
 
-1. Percorre todas as células.
+1. Percorre todas as células com valor.
 2. Coleta vizinhos ortogonais iguais.
-3. Calcula a prioridade pelo número de vizinhos.
-4. Filtra os candidatos da maior prioridade.
-5. Sorteia um candidato.
+3. Ignora candidatos cujo resultado não é válido.
+4. Usa a maior prioridade (número de vizinhos) disponível.
+5. Sorteia um candidato da prioridade (`IRandomSource`).
 6. Aplica o resultado na origem e remove os vizinhos.
 
-A origem mantém o resultado; os vizinhos são removidos.
+### 9.5 Cascatas
 
-### 8.5 Cascatas
+Arquivo: `CascadeResolver.cs`
 
-Arquivo: `Assets/!/Scripts/Gameplay/CascadeResolver.cs`
-
-O resolvedor:
-
-1. Aplica gravidade inicial.
-2. Captura o snapshot pós-gravidade.
-3. Resolve uma combinação por vez.
-4. Verifica progresso: a quantidade de peças deve cair em `participantes − 1`.
-5. Aplica gravidade.
-6. Detecta ciclos por snapshot textual.
-7. Limita a execução a `10000` etapas.
-8. Retorna `CascadeResult` com todas as etapas.
+1. Aplica gravidade inicial e captura o snapshot correspondente.
+2. Resolve uma combinação por vez.
+3. Verifica progresso: a quantidade de peças deve cair exatamente em `participantes − 1`; caso contrário, lança exceção.
+4. Aplica gravidade.
+5. Detecta ciclos por snapshot textual (lança exceção se o tabuleiro se repetir).
+6. Limita a execução a `10000` etapas (`DefaultMaxSteps`).
+7. Retorna `CascadeResult` com todas as etapas.
 
 As proteções de progresso, ciclo e limite evitam loops infinitos em caso de bug.
 
-### 8.6 `BoardController` e pontuação
+### 9.6 `BoardController` e pontuação
 
-Arquivos:
+Arquivos: `BoardController.cs`, `ScoreService.cs`
 
-- `Assets/!/Scripts/Gameplay/BoardController.cs`
-- `Assets/!/Scripts/Managers/ScoreService.cs`
-
-`BoardController.TryPlay` é a operação principal:
+`BoardController.TryPlay(coluna, valor, out MoveResult)` é a operação principal:
 
 - Bloqueia se o jogo acabou.
 - Verifica se a pontuação suporta o pior caso possível.
-- Insere a peça.
+- Insere a peça; se a coluna estiver cheia, retorna `false`.
 - Resolve a cascata.
-- Soma os valores resultantes.
-- Atualiza a pontuação.
-- Define `IsGameOver`.
+- Soma os valores resultantes e atualiza a pontuação.
+- Define `IsGameOver` pelo overflow de qualquer coluna.
 - Produz `MoveResult`.
 
-`ScoreService` mantém `CurrentScore` e `Record`, ambos `long`, com `CanAdd` e `TryAdd`.
+Ao construir o controlador com um tabuleiro restaurado, `IsGameOver` já é calculado a partir do estado.
 
-### 8.7 `BoardView`
+`ScoreService` mantém `CurrentScore` e `Record`, ambos `long`. Ao restaurar, o recorde nunca fica abaixo da pontuação restaurada.
+
+### 9.7 `BoardView`
 
 Arquivo: `Assets/!/Scripts/UI/BoardView.cs`
 
-Responsável por toda a representação visual do tabuleiro:
+Responsável pela representação visual do tabuleiro:
 
-- Cria 40 células em runtime.
-- Dimensão calculada: `5 × 84 + 4 × 6 = 444` de largura e `8 × 84 + 7 × 6 = 714` de altura.
-- A linha de entrada usa cor diferente.
-- Cria e destrói `TileView` conforme os snapshots.
-- `GetNearestColumn` converte posição local em coluna.
-- `GetColumnCenterX` retorna o centro da coluna.
-- `GetDropStartLocalY` retorna o ponto acima da linha de entrada.
-- `GetDropStartPosition` combina coluna e ponto de queda.
-
-As células e os tiles não ficam salvos na cena: são criados em runtime por `EnsureBuilt` e `SetBoard`.
+- Cria as células de fundo (`Cell_c_r`) apenas para as linhas visíveis, em `EnsureBuilt`. A linha de overflow não tem célula de fundo.
+- Tamanho da célula: o maior valor que cabe no `RectTransform` do próprio objeto, a menos que `_cellSizeOverride` seja maior que zero. Espaçamento configurável (padrão 6 px).
+- Cria e destrói `TileView` conforme os snapshots (`SetBoard`).
+- `GetNearestColumn` converte posição local em coluna; `GetColumnCenterX` retorna o centro da coluna; `GetDropStartLocalY` retorna o ponto acima da linha de entrada.
+- Duração configurável de cada animação: inserção (0,18 s), combinação (0,12 s), pop (0,12 s) e gravidade (0,12 s).
 
 `PlayMove` executa:
 
 1. Restaura o snapshot anterior.
 2. Cria a peça inserida na posição inicial da prévia.
-3. Anima a inserção.
+3. Anima a inserção (LeanTween).
 4. Anima a gravidade até `AfterInitialGravity`.
 5. Para cada `CascadeStep`, anima a combinação e a gravidade seguinte.
-6. Sincroniza o grid com `FinalBoard`.
+6. Sincroniza o grid com `FinalBoard` (`EnsureGridMatches`).
 
-As animações de inserção usam LeanTween. As animações de combinação e gravidade continuam em coroutines com interpolação manual; isso foi mantido porque o fluxo já estava estável e o requisito de LeanTween era focado nas novas animações de peça/fila.
+### 9.8 `TileView` e `TileTheme`
 
-### 8.8 `TileView`
+Arquivos: `TileView.cs`, `TileTheme.cs`, `Assets/!/Themes/DefaultTileTheme.asset`
 
-Arquivo: `Assets/!/Scripts/UI/TileView.cs`
+`TileView`:
 
-- Exibe o valor no `Text`.
-- Aplica cor da paleta conforme `abs(value) % 8`.
-- Controla escala via `transform.localScale`.
-- Controla transparência via `CanvasGroup`.
+- Exibe o valor em um `TMP_Text` filho.
+- Recebe o sprite de fundo do tema para o seu valor (`GetPieceSprite`) e a cor do texto do tema.
+- Controla escala via `transform.localScale` e transparência via `CanvasGroup`.
 - `ResetVisual()` restaura escala 1 e alpha 1.
 
-O prefab `Tile.prefab` contém:
+`TileTheme` (ScriptableObject, menu `Number Merge/Tile Theme`):
 
-- `Tile` com `Image`, `TileView` e `CanvasGroup`.
-- Filho `Label` com `Text`.
-- Tamanho base `84×84`.
-- Raycast desativado.
+- `SlotSprite`: sprite de cada célula vazia.
+- `TextColor`: cor do valor em todas as peças.
+- `PieceSprites`: sprites por ordem crescente a partir de `2` (índice 0 = 2, 1 = 4, 2 = 8, …).
+- `FallbackPieceSprite`: usado para valores sem sprite próprio.
+- `BadTileSprite`: reservado, ainda sem uso.
 
-### 8.9 `PieceQueueView`
+O prefab `Tile.prefab` contém um `Image` com `TileView` e `CanvasGroup`, e um filho `Label` com `TMP_Text`. O raycast está desativado.
+
+### 9.9 `PieceQueueView`
 
 Arquivo: `Assets/!/Scripts/UI/PieceQueueView.cs`
 
 Responsável pela fila visual de duas peças:
 
-- `Initialize` cria `QueueCurrent` e `QueueNext`.
-- `QueueCurrent` fica centralizada acima do tabuleiro, em escala 1.
-- `QueueNext` fica no canto superior direito, em escala `0.7`.
+- `Initialize` cria `QueueCurrent` (escala 1, centro acima do tabuleiro) e `QueueNext` (escala `0.7`, canto superior direito).
 - `BeginPreview` cancela tweens, restaura o visual e coloca a peça atual na frente.
 - `MovePreviewTo` move a peça atual com LeanTween `easeOutQuad`.
 - `CancelPreview` devolve a peça ao centro.
 - `Advance`:
-  1. Desativa e destrói a peça atual.
-  2. Promove a próxima peça para atual.
-  3. Move a nova atual para o centro com `easeOutBack`.
-  4. Escala de `0.7` para `1` com `easeOutBack`.
-  5. Cria a nova próxima já visível em `0.7`.
+  1. Destrói a peça atual.
+  2. Promove a próxima peça para atual e a move ao centro com `easeOutBack`, escalando de `0.7` para `1`.
+  3. Cria a nova próxima já visível em escala `0.7`.
 
-A nova próxima peça entra imediatamente visível para manter sempre duas peças na tela. A peça antiga é desativada no mesmo frame e destruída pelo Unity ao final do frame.
+Os dois tiles são criados em runtime; o `QueueRoot` não tem filhos salvos na cena.
 
-O `QueueRoot` não tem filhos salvos na cena; as duas peças são criadas em runtime. Os antigos objetos `ButtonsRoot`, `PieceText` e `NextPiecePanel` e o script `ColumnButton` foram removidos.
-
-### 8.10 `GameplayScreen`
+### 9.10 `GameplayScreen`
 
 Arquivo: `Assets/!/Scripts/UI/GameplayScreen.cs`
 
-É o controlador da cena e ponto de composição:
+É o controlador da cena e o ponto de composição:
 
-- Cria `BoardController` e `PieceGenerator` em `Awake`.
-- Inicializa `BoardView` e `PieceQueueView`.
-- Lê `Pointer.current` em `Update`.
-- Bloqueia input durante animação ou game over.
+- Em `Awake`, carrega o jogo salvo ou inicia um novo, inicializa a `BoardView` e a fila, e salva o estado inicial.
+- Lê `Pointer.current` em `Update` e ignora o input durante animação, game over ou com o overlay de debug aberto.
 - Implementa prévia, arraste e commit.
-- Expõe `PlayColumn(int)` para inserção direta.
+- Expõe `PlayColumn(int)` para inserção direta (usada também em testes manuais).
 - Atualiza pontuação e status.
-- Executa a coroutine de animação da jogada.
+- Executa a coroutine de animação da jogada e salva o progresso ao final dela.
 
-Estados de status:
+Textos de status:
 
 - “Toque e arraste para escolher a coluna”
 - “Solte para inserir”
 - “Resolvendo...”
 - “Coluna cheia”
-- “GAME OVER”
 
-## 9. Cena e layout
+O texto de pontuação mostra pontos e recorde na mesma linha.
 
-### Hierarquia da cena Gameplay
+### 9.11 `GameOverScreen`
 
-```text
-Main Camera
-GameCanvas
-  Background
-  Board
-  Title
-  ScoreText
-  StatusText
-  QueueRoot
-EventSystem
-```
+Arquivo: `Assets/!/Scripts/UI/GameOverScreen.cs`
 
-`GameCanvas` contém:
+- Mostra um overlay com “Pontos” e “Recorde”.
+- O botão de reinício recarrega a cena `Gameplay`. Como o save foi apagado, a nova partida começa do zero.
 
-- `Canvas`
-- `CanvasScaler`
-- `GraphicRaycaster`
-- `GameplayScreen`
+### 9.12 `DebugScreen`
 
-`EventSystem` usa `InputSystemUIInputModule`, mas o gameplay lê o ponteiro diretamente.
+Arquivo: `Assets/!/Scripts/UI/DebugScreen.cs`
 
-### Layout atual
+- Abre e fecha com **F12** (lido com `Keyboard.current`).
+- Enquanto estiver aberto, bloqueia o input de jogo (`DebugScreen.IsOpen`).
+- Botões: fechar, reiniciar a partida, e **limpar dados e reiniciar** (apaga o recorde e o save).
 
-| Elemento | Posição/tamanho |
-|---|---|
-| Canvas | `1920×1080` na verificação |
-| Referência do CanvasScaler | `1080×1920`, match `0.5` |
-| Board | `(0, -40)`, `444×714` |
-| Topo local do board | `y = 317` |
-| Centro da coluna 0 | `x = -180` |
-| Centro da coluna 4 | `x = +180` |
-| Fila atual | `(0, 361)`, escala `1` |
-| Fila próxima | `(280, 363)`, escala `0.7` |
-| Ponto de queda local | `y = 401` |
-| StatusText | anchor inferior, `y = 30`, `800×50` |
+É um recurso de desenvolvimento. Não há controle para desligá-lo em build.
 
-A fila atual fica acima do board. A próxima fica no canto superior direito, na área antes ocupada pelo painel de próxima peça. O `QueueRoot` é o último filho do Canvas, garantindo que as peças da fila fiquem na frente do board.
+### 9.13 `AudioManager`
 
-## 10. Input e animações
+Arquivo: `Assets/!/Scripts/Audio/AudioManager.cs`
+
+- Singleton (`AudioManager.Instance`) com `DontDestroyOnLoad`. Duplicatas se destroem.
+- Cria três `AudioSource`, roteados para os grupos Music, Sfx e Ui de um `AudioMixer`.
+- Toca a música de fundo (`_backgroundMusic`, em loop) ao iniciar. A cena `Gameplay` já referencia o mixer e o clipe.
+- Métodos disponíveis: `PlayMusic`, `StopMusic`, `PlaySfx`, `PlayUi`, `SetVolume`, `GetVolume`. Volume é linear (0 a 1), convertido para decibéis. Os parâmetros do mixer são `MusicVolume`, `SfxVolume` e `UiVolume`.
+- `PlaySfx` e `PlayUi` ainda não são chamados pelo jogo.
+
+### 9.14 `FullscreenBackground`
+
+Arquivo: `Assets/!/Scripts/UI/FullscreenBackground.cs`
+
+- Em cada frame, posiciona o `SpriteRenderer` na frente da câmera e escala-o para cobrir toda a área visível (“cover”), mantendo a proporção.
+- Funciona com câmera ortográfica ou em perspectiva. Usa a câmera atribuída ou `Camera.main`.
+- Roda também no Editor (`[ExecuteAlways]`).
+
+## 10. Cena e layout
+
+### Objetos da cena `Gameplay`
+
+Objetos identificados no arquivo da cena:
+
+- `Main Camera`
+- `GameCanvas`, com `Canvas`, `CanvasScaler`, `GraphicRaycaster` e `GameplayScreen`
+- `BackgroundSprite` (com `FullscreenBackground`)
+- `Board` (com `BoardView`)
+- `Title`, `ScoreText`, `RecordText`, `StatusText`
+- `QueueRoot` (com `PieceQueueView`)
+- `GameOverScreen`, com `Overlay`, `Panel`, `ScoreText`, `RecordText`, `Title` e `RestartButton`
+- Overlay de debug (`DebugScreen`)
+- `AudioManager`
+- `ContinueButton` (sem script associado no código atual)
+- `EventSystem`, com `InputSystemUIInputModule`
+
+O gameplay lê o ponteiro diretamente. O `EventSystem` existe para a UI de botões.
+
+### Layout
+
+- A posição e o tamanho do tabuleiro são definidos no `RectTransform` de `Board`.
+- A posição da fila atual é derivada do topo do tabuleiro (`GetDropStartLocalY`), e a próxima fica deslocada para a direita e para cima (`+280` em X, `+75` em Y do ponto de entrada).
+- As escalas são: atual `1`, próxima `0.7`.
+- Os valores numéricos anteriores (por exemplo, o tabuleiro de `444×714` com células de `84 px`) não foram reverificados nesta atualização, porque o tamanho das células agora é calculado a partir do `RectTransform`.
+
+## 11. Input e animações
 
 ### Input
 
 - O projeto usa o novo Input System.
-- `GameplayScreen.Update` lê `Pointer.current`.
-- A leitura foi implementada para mouse e toque.
-- Não há botões de coluna.
-- A coluna é escolhida pela posição horizontal do ponteiro, convertida para coordenadas locais do board.
-- A coluna é limitada entre `0` e `4`.
+- `GameplayScreen.Update` lê `Pointer.current` (mouse e toque).
+- Não há botões de coluna. A coluna é escolhida pela posição horizontal do ponteiro, convertida para coordenadas locais do tabuleiro e limitada entre `0` e `4`.
 - A prévia só é atualizada quando a coluna muda.
-- Soltar confirma a jogada.
-- Se a coluna estiver cheia, a peça volta ao centro.
+- Soltar confirma a jogada. Se a coluna estiver cheia, a peça volta ao centro.
 
-O caminho de input foi implementado com a API padrão do Input System, mas a simulação automatizada de toque no Editor não foi confiável. O teste final de toque real deve ser manual.
+O caminho de input foi implementado com a API padrão do Input System, mas a simulação automatizada de toque no Editor não foi confiável. O teste de toque real deve ser manual.
 
 ### Animações
 
@@ -509,90 +530,115 @@ O caminho de input foi implementado com a API padrão do Input System, mas a sim
 | Prévia horizontal | LeanTween `move`, `easeOutQuad`, `0.12s` |
 | Retorno ao centro | LeanTween `move`, `easeOutQuad`, `0.12s` |
 | Promoção da fila | LeanTween `move` + `scale`, `easeOutBack`, `0.3s` |
-| Inserção no board | LeanTween `move` + `scale` + `value`, `easeOutQuad`, `0.18s` |
+| Inserção no tabuleiro | LeanTween `move` + `scale` + `value`, `0.18s` |
 | Combinação | Coroutine com interpolação smoothstep, `0.12s` |
 | Pop do resultado | Coroutine com interpolação, `0.12s` |
 | Gravidade | Coroutine com interpolação smoothstep, `0.12s` |
 
-A escolha de manter combinação/gravidade em coroutines foi deliberada para não reescrever um fluxo já validado. As novas partes visuais usam LeanTween.
+As animações de combinação e gravidade continuam em coroutines com interpolação manual. Isso foi mantido porque o fluxo já estava estável.
 
-## 11. Como executar e testar
+## 12. Como executar e testar
 
 1. Abrir o projeto no Unity `6000.3.10f1`.
 2. Abrir `Assets/!/Scenes/Gameplay.unity`.
 3. Entrar em Play Mode.
-4. Pressionar e arrastar com mouse ou toque.
-5. Soltar para inserir.
-6. Verificar:
+4. Pressionar e arrastar com mouse ou toque; soltar para inserir.
+5. Verificar:
    - Fila inicial com duas peças.
    - Prévia acompanhando a coluna.
    - Inserção na coluna escolhida.
    - Fila avançando após uma jogada válida.
-   - Combinações e pontuação.
+   - Combinações, cascatas e pontuação.
    - Coluna cheia mantendo a peça atual.
-   - Game over quando uma coluna ultrapassar 7 peças.
+   - Recorde mantido após fechar e reabrir o jogo.
+   - Partida retomada após fechar e reabrir o jogo.
+   - Game over com pontos e recorde, e reinício.
+   - F12 abrindo o overlay de debug, com “limpar dados e reiniciar”.
 
-Para build, a cena Gameplay ainda precisa ser adicionada ao Build Settings. Atualmente `EditorBuildSettings.asset` aponta para `Assets/Scenes/SampleScene.unity`.
+Build: `EditorBuildSettings.asset` contém apenas `Assets/!/Scenes/Gameplay.unity`.
 
-## 12. Verificações realizadas
+## 13. Verificações realizadas
 
-| Verificação | Resultado |
+Esta atualização foi feita por leitura do código-fonte e dos arquivos de cena e configuração. O Unity Editor não estava em execução, então as verificações abaixo **não foram refeitas nesta atualização**:
+
+| Verificação | Estado |
 |---|---|
-| Compilação | 0 erros |
-| Referências ausentes na cena | 0 |
-| Cena Gameplay salva | Sim |
-| Fila inicial | Atual `(0, 361)` escala `1`; próxima `(280, 363)` escala `0.7` |
-| Prévia nas colunas 0/4 | `x = -180` e `x = +180` |
-| Commit de jogada | Peça inserida, fila avançou |
-| Combinação | Peça resultante e pontuação corretas |
-| Coluna cheia | Status “Coluna cheia”, fila não avançou |
-| Layout final | Fila e status sem sobreposição |
-| Toque real no Editor | Não automatizado de forma confiável; pendente de teste manual |
+| Compilação sem erros | Não verificada nesta atualização (último registro: 0 erros, versão anterior) |
+| Referências ausentes na cena | Não verificadas nesta atualização (último registro: 0, versão anterior) |
+| Referências de inspector em `Gameplay.unity` | Presentes para `AudioManager`, `BoardView` e `PieceQueueView` (verificado por leitura do YAML) |
+| Toque real no Editor | Pendente de teste manual |
 
-## 13. Limitações e próximos passos
+## 14. Limitações e próximos passos
 
 ### Prioridade alta
 
-1. Adicionar `Gameplay.unity` ao Build Settings e testar um build.
+1. Verificar compilação e referências ausentes com o Unity aberto.
 2. Testar toque real em dispositivo ou no Editor com mouse.
-3. Definir a orientação/resolução alvo e revisar o CanvasScaler.
+3. Definir a orientação e a resolução alvo, e revisar o CanvasScaler.
+4. Testar um build com `Gameplay` (inclui o ciclo de save, game over e reinício).
 
 ### Prioridade média
 
-4. Implementar reinício após game over.
-5. Persistir o recorde.
-6. Criar a cena de menu e a transição para o gameplay.
-7. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver` e `ScoreService`.
+5. Criar a cena de menu e a transição para o gameplay, ou remover o `MainMenu` e o `ContinueButton` se não forem usados.
+6. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `SpawnTable`, `ScoreService` e `BoardState`.
+7. Ligar os efeitos sonoros (`PlaySfx`) ao drop, à combinação e ao game over.
 
 ### Prioridade baixa
 
-8. Integrar áudio.
+8. Decidir se o “bad tile” entra no jogo ou se o campo `BadTileSprite` é removido.
 9. Adicionar feedback visual de pontuação.
 10. Avaliar pooling de tiles.
-11. Revisar animações de combinação/gravidade para LeanTween, se necessário.
-12. Remover assets não utilizados ou documentar seu propósito.
+11. Remover assets não utilizados ou documentar seu propósito (por exemplo, `Particles`, `scrath.png` e `tile click.mp3`).
+12. Desligar ou remover o overlay de debug em builds finais.
 
-## 14. Referência rápida
+## 15. Referência rápida
 
 | Arquivo | Responsabilidade |
 |---|---|
 | `Assets/!/Scripts/Gameplay/BoardModel.cs` | Estado e operações básicas do tabuleiro |
-| `Assets/!/Scripts/Gameplay/BoardController.cs` | Orquestra jogada, cascata e game over |
+| `Assets/!/Scripts/Gameplay/BoardController.cs` | Orquestra jogada, cascata, pontuação e game over |
 | `Assets/!/Scripts/Gameplay/CascadeResolver.cs` | Resolve cascatas com proteções |
 | `Assets/!/Scripts/Gameplay/MergeResolver.cs` | Escolhe e aplica uma combinação |
 | `Assets/!/Scripts/Gameplay/MergeMath.cs` | Fórmula e limites de combinação |
-| `Assets/!/Scripts/Gameplay/PieceGenerator.cs` | Geração 2/4 e fila lógica |
-| `Assets/!/Scripts/Gameplay/BoardSnapshot.cs` | Cópia imutável do tabuleiro |
+| `Assets/!/Scripts/Gameplay/PieceGenerator.cs` | Fila de peças (atual e próxima) |
+| `Assets/!/Scripts/Gameplay/SpawnTable.cs` | Probabilidades de geração adaptativas |
+| `Assets/!/Scripts/Gameplay/RandomSource.cs` | Fonte de aleatoriedade substituível |
+| `Assets/!/Scripts/Gameplay/BoardSnapshot.cs` | Cópia do tabuleiro para animação |
 | `Assets/!/Scripts/Gameplay/MoveResult.cs` | Dados de uma jogada completa |
 | `Assets/!/Scripts/Gameplay/CascadeResult.cs` | Resultado agregado da cascata |
 | `Assets/!/Scripts/Gameplay/CascadeStep.cs` | Snapshots de uma etapa da cascata |
 | `Assets/!/Scripts/Gameplay/MergeOutcome.cs` | Dados de uma combinação |
 | `Assets/!/Scripts/Managers/ScoreService.cs` | Pontuação e recorde |
-| `Assets/!/Scripts/UI/GameplayScreen.cs` | Controlador da cena e input |
+| `Assets/!/Scripts/Save/SaveSystem.cs` | Leitura e escrita do recorde e do save da partida |
+| `Assets/!/Scripts/Save/BoardState.cs` | Formato serializado da partida em andamento |
+| `Assets/!/Scripts/Audio/AudioManager.cs` | Música e volumes via AudioMixer |
+| `Assets/!/Scripts/UI/GameplayScreen.cs` | Controlador da cena, input e salvamento |
 | `Assets/!/Scripts/UI/BoardView.cs` | Visual do tabuleiro e animações |
 | `Assets/!/Scripts/UI/PieceQueueView.cs` | Fila visual de duas peças |
 | `Assets/!/Scripts/UI/TileView.cs` | Visual individual de tile |
+| `Assets/!/Scripts/UI/TileTheme.cs` | Sprites e cores das peças e do tabuleiro |
+| `Assets/!/Scripts/UI/GameOverScreen.cs` | Tela de game over e reinício |
+| `Assets/!/Scripts/UI/DebugScreen.cs` | Overlay de debug (F12) |
+| `Assets/!/Scripts/UI/FullscreenBackground.cs` | Fundo em tela cheia |
 | `Assets/!/Prefabs/Tile.prefab` | Prefab base do tile |
+| `Assets/!/Themes/DefaultTileTheme.asset` | Tema padrão |
 | `Assets/!/Scenes/Gameplay.unity` | Cena jogável atual |
 | `Assets/!/Scenes/MainMenu.unity` | Placeholder de menu |
 | `Assets/LeanTween` | Biblioteca de animações |
+
+## 16. Mudanças desde a versão anterior
+
+Esta seção resume o que mudou em relação ao documento de 2026-10-23:
+
+- **Geração de peças:** deixou de ser fixa (90% `2`, 10% `4`). Agora é adaptativa (`SpawnTable`), com o `2` com no mínimo 20%.
+- **Fórmula de combinação corrigida na documentação:** o resultado é `valor × 2^(participantes − 1)`. A versão anterior descrevia `valor × (participantes − 1) × 2`, que dá resultados diferentes para 4 e 5 participantes (por exemplo, 16 em vez de 12 para 4 participantes com `2`).
+- **Recorde persistido:** deixou de ser apenas em memória. Salvo em `PlayerPrefs`.
+- **Partida retomável:** o tabuleiro, a fila e a pontuação são salvos após cada jogada e restaurados ao abrir o jogo.
+- **Game over:** agora tem tela própria com pontos, recorde e reinício.
+- **Overlay de debug (F12):** adicionado.
+- **Áudio:** `AudioManager` com AudioMixer e música de fundo. Efeitos sonoros ainda não estão ligados.
+- **Textos:** a UI usa TextMeshPro, não mais `UnityEngine.UI.Text`.
+- **Tema:** as cores e sprites das peças vêm de `TileTheme` (ScriptableObject).
+- **Tamanho das células:** calculado a partir do `RectTransform` do tabuleiro, não mais fixo em `84 px`.
+- **Build:** `EditorBuildSettings.asset` agora aponta para `Gameplay.unity` (antes apontava para `SampleScene.unity`).
+- **Histórico de commits:** `6d8951b Game Over and Save system`, `2a61669 icon` e `9d541ef bug fix` foram incluídos nesta atualização.
