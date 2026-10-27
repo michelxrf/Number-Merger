@@ -20,7 +20,7 @@ namespace NumberMerge.Gameplay
                 return false;
             }
 
-            int calculatedValue = value * (participantCount - 1) * 2;
+            int calculatedValue = value << (participantCount - 1);
             if (calculatedValue > MaxTileValue)
             {
                 return false;
