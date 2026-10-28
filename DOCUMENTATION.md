@@ -1,6 +1,6 @@
 # Number Merge — Documentação do Estado Atual
 
-> Última atualização: 2026-10-27  
+> Última atualização: 2026-10-28  
 > Projeto: `D:\Projects\Number Merger`  
 > Unity: `6000.3.10f1`  
 > Último commit incluído: `9d541ef bug fix`
@@ -31,7 +31,7 @@
 O estado atual é um **protótipo jogável**, com:
 
 - Tabuleiro de 5 colunas e 7 linhas visíveis, mais uma linha de overflow.
-- Geração de peças adaptativa, baseada nas peças presentes no tabuleiro.
+- Geração de peças adaptativa à pressão do tabuleiro, com pesos e temperatura configuráveis em um único arquivo.
 - Combinação por vizinhança ortogonal, com cascatas e gravidade.
 - Pontuação e recorde, ambos persistidos com `PlayerPrefs`.
 - Retomada da partida em andamento ao reabrir o jogo.
@@ -50,7 +50,7 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 - Combinação de 2 a 5 peças iguais adjacentes, com resultado limitado a `8192`.
 - Prioridade por maior número de vizinhos iguais; empate resolvido aleatoriamente.
 - Gravidade e múltiplas cascatas, com proteções contra progresso inválido, ciclos e loops longos.
-- Geração de peças adaptativa (`SpawnTable`).
+- Geração de peças: elegibilidade e probabilidades base em `SpawnTable`, ajustadas pela pressão do tabuleiro (ver seção 6).
 - Fila de duas peças sempre visível: atual (centro) e próxima (canto).
 - Prévia da peça atual acompanhando a coluna escolhida durante o arraste.
 - Pontuação somando o valor resultante de cada combinação.
@@ -69,7 +69,7 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 - Efeitos sonoros: `PlaySfx` e `PlayUi` existem, mas nada os chama ainda.
 - Tipo de peça "bad tile": o campo `BadTileSprite` existe no tema, mas a mecânica não foi implementada.
 - Teste automatizado do caminho real de toque no Editor.
-- Testes automatizados de lógica do projeto (há apenas os testes de exemplo do próprio LeanTween).
+- Testes automatizados para os demais sistemas de lógica. A cobertura atual é apenas a geração de peças (ver seção 13).
 - Ajuste definitivo de responsividade e orientação.
 
 ## 3. Tecnologias e configuração
@@ -88,7 +88,7 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 | Animações | LeanTween em `Assets/LeanTween` |
 | Assembly | Sem `.asmdef`; código do jogo em `Assembly-CSharp` |
 | Namespaces | `NumberMerge.Gameplay`, `NumberMerge.Managers`, `NumberMerge.Save`, `NumberMerge.UI`, `NumberMerge.Audio` |
-| Testes | Nenhum teste automatizado próprio do projeto |
+| Testes | 72 testes EditMode próprios da geração de peças, em `Assets/!/Tests/Editor` (Unity Test Framework) |
 
 Observação: a referência do CanvasScaler é retrato (`1080×1920`), mas o layout foi montado e verificado em landscape (`1920×1080`). Se o alvo final for retrato, o layout precisa ser revisto.
 
@@ -116,7 +116,10 @@ Assets/
         BoardController.cs, BoardModel.cs, BoardPosition.cs, BoardSnapshot.cs,
         CascadeResolver.cs, CascadeResult.cs, CascadeStep.cs,
         MergeMath.cs, MergeOutcome.cs, MergeResolver.cs, MoveResult.cs,
-        PieceGenerator.cs, RandomSource.cs, SpawnTable.cs
+        RandomSource.cs, SpawnTable.cs,
+        PieceGenerator.cs, PieceGenerationSettings.cs, BoardPressureCalculator.cs,
+        PieceDifficultyEvaluator.cs, CandidateSelection.cs, PieceGenerationDecision.cs,
+        PieceGenerationConfig.cs (ScriptableObject)
       Managers/
         ScoreService.cs
       Save/
@@ -125,16 +128,22 @@ Assets/
         BoardView.cs, DebugScreen.cs, FullscreenBackground.cs,
         GameOverScreen.cs, GameplayScreen.cs, PieceQueueView.cs,
         TileTheme.cs, TileView.cs
+    Settings/
+      PieceGenerationConfig.asset  Balanceamento da geração de peças (ScriptableObject)
     Sprites/                Tiles, slot, fundos, partículas
     Themes/
       DefaultTileTheme.asset  Tema padrão do tabuleiro e das peças
+    Tests/
+      Editor/                 Testes EditMode da geração de peças (ver seção 13)
+        TestBoards.cs, BoardPressureCalculatorTests.cs, PieceDifficultyEvaluatorTests.cs,
+        CandidateSelectionTests.cs, PieceGeneratorTests.cs
   LeanTween/                Biblioteca de animações (inclui pasta Testing com exemplos próprios)
 ProjectSettings/
   ProjectSettings.asset
   EditorBuildSettings.asset  Build: apenas Gameplay
 ```
 
-Não existem scripts de Editor, assemblies separadas ou testes próprios do projeto no estado atual.
+Os testes próprios ficam em `Assets/!/Tests/Editor`, sem `.asmdef`. Eles compilam em `Assembly-CSharp-Editor`, porque um `.asmdef` não pode referenciar `Assembly-CSharp`. Não há outros scripts de Editor.
 
 ## 5. Arquitetura
 
@@ -144,7 +153,10 @@ A implementação separa lógica de jogo e apresentação:
 Pointer.current / Keyboard.current
       │
       ▼
-GameplayScreen ──────────────► PieceGenerator ──► SpawnTable
+GameplayScreen ──────────────► PieceGenerator ──► SpawnTable (elegibilidade e base)
+      │                              ├──► BoardPressureCalculator (pressão)
+      │                              ├──► PieceDifficultyEvaluator (pontuação)
+      │                              └──► CandidateSelection (softmax) ──► SpawnTable.Pick
       │                              │
       │                              ▼
       ├──────────────────────► PieceQueueView
@@ -164,7 +176,7 @@ AudioManager (singleton, DontDestroyOnLoad) ──► AudioMixer
 
 ### Camadas
 
-- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `PieceGenerator`, `SpawnTable`, `RandomSource`.
+- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `RandomSource`, e a geração de peças: `PieceGenerator`, `PieceGenerationSettings`, `SpawnTable`, `BoardPressureCalculator`, `PieceDifficultyEvaluator`, `CandidateSelection`, `PieceGenerationDecision`.
 - **Persistência:** `SaveSystem`, `BoardState`.
 - **Apresentação:** `GameplayScreen`, `BoardView`, `PieceQueueView`, `TileView`, `TileTheme`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
 - **Áudio:** `AudioManager`.
@@ -190,16 +202,73 @@ A lógica pura não depende de `MonoBehaviour` e recebe dependências por constr
 - `Advance()` promove `Next` para `Current` e gera um novo `Next` com base no tabuleiro **após** a jogada.
 - Ao iniciar uma partida, `Current` e `Next` são gerados a partir do tabuleiro vazio.
 
-### Geração de peças (`SpawnTable`)
+### Geração de peças
+
+A geração tem três camadas:
+
+1. **Elegibilidade e probabilidades base** (`SpawnTable`): quais valores podem nascer e com qual peso histórico.
+2. **Pressão do tabuleiro** (`BoardPressureCalculator`): quão perto o tabuleiro está do perigo.
+3. **Pontuação e seleção** (`PieceDifficultyEvaluator`, `CandidateSelection`): ajusta as probabilidades pela pressão, favorecendo jogadas mais difíceis conforme o tabuleiro enche.
+
+Os valores elegíveis são sempre os mesmos da camada 1. A camada 2 e 3 só mudam a probabilidade de cada um.
+
+#### Elegibilidade e probabilidades base (`SpawnTable`)
 
 A probabilidade de cada valor depende das peças presentes no tabuleiro:
 
-1. **Limite:** só nascem valores **menores que a segunda maior peça distinta** do tabuleiro. Assim, a maior e a segunda maior peças nunca nascem. Se houver apenas um valor distinto, ele é excluído.
-2. **Pesos:** cada valor candidato tem peso igual à quantidade dessa peça no tabuleiro.
-3. **Mínimo do `2`:** o valor `2` sempre tem pelo menos **20%** de chance (`MinimumValueChance`), mesmo que não esteja no tabuleiro. Se a parcela proporcional for menor, o `2` recebe 20% e os demais dividem os 80% restantes proporcionalmente.
-4. **Caso sem alternativas:** se o `2` for o único candidato possível, ele nasce com 100%.
+1. **Teto:** o teto é `maior peça do tabuleiro × 2^SpawnCeilingLevelOffset`, limitado a 8192 (`SpawnTable.CalculateCeiling`). Nascem valores até o teto, inclusive. O padrão `SpawnCeilingLevelOffset = -1` dá metade da maior peça. `0` permite que a maior peça nasça; valores positivos permitem valores acima dela; valores negativos reduzem o teto, e um teto abaixo de 2 deixa só o `2`. Um tabuleiro vazio ignora o offset.
+2. **Candidatos:** são elegíveis todas as potências de 2 até o teto, **estejam ou não no tabuleiro**, além de outros valores presentes no tabuleiro até o teto.
+3. **Pesos:** cada valor presente no tabuleiro tem peso igual à quantidade dessa peça. Uma potência de 2 ausente do tabuleiro recebe o peso `AbsentValueWeight` (padrão 0,5, em unidades de uma peça). Com `AbsentValueWeight = 0`, só valores presentes no tabuleiro nascem, como antes.
+4. **Mínimo do `2`:** o valor `2` sempre tem pelo menos **20%** de chance (`MinimumValueChance`), mesmo que não esteja no tabuleiro. Se a parcela proporcional for menor, o `2` recebe 20% e os demais dividem os 80% restantes proporcionalmente.
+5. **Caso sem alternativas:** se o `2` for o único candidato possível, ele nasce com 100%.
 
-Exemplo: tabuleiro com `2` ×3, `4` ×1 e `8` ×1. Limite = segunda maior = `4`, então só o `2` é candidato, com 100%. Com `2` ×0, `4` ×1, `8` ×1, o limite é `4`, e só o `2` pode nascer (100%).
+Exemplos (teto = segunda maior peça, inclusive; pesos = contagem no tabuleiro, `AbsentValueWeight` = 0,5 para potências ausentes):
+
+- Tabuleiro com `2` ×3, `4` ×1 e `8` ×1: teto = `4`. Candidatos: `2` (peso 3) e `4` (peso 1), com `2` sempre pelo menos 20%.
+- Tabuleiro com `16` ×1 e `8` ×1: teto = `8`. Candidatos: `2` e `4` (ausentes, peso 0,5 cada) e `8` (peso 1).
+- Tabuleiro com `4` ×2 e `2` ×1: a maior peça é `4`, então o teto é `2`. Só o `2` pode nascer (100%).
+
+#### Pressão do tabuleiro
+
+A pressão bruta é `0,50·H + 0,30·D + 0,20·I`, limitada a [0, 1]:
+
+- **H (altura):** média de `min(altura da coluna, 7) / 7`.
+- **D (densidade):** células visíveis ocupadas / 35. A linha de overflow não entra na contagem.
+- **I (desequilíbrio):** `(altura máxima − altura mínima) / 7`.
+
+A linha 7 é o limiar de perigo. Uma coluna que chega à linha de overflow conta como cheia, então o overflow nunca reduz a pressão.
+
+A pressão bruta máxima alcançável em um tabuleiro empilhado (sempre o caso, pela gravidade) é **0,84**: quatro colunas cheias e uma vazia. Um tabuleiro com as 35 células visíveis ocupadas dá **0,80**. Por isso, o agendamento usa a pressão **normalizada** = bruta / 0,84, limitada a 1, para que o topo da escala seja alcançável.
+
+#### Pontuação dos candidatos
+
+Cada valor elegível recebe quatro componentes em [0, 1], em que valores maiores significam mais favorecido na seleção:
+
+| Componente | Cálculo |
+|---|---|
+| **F, frequência** | Probabilidade base de `SpawnTable`, dividida pela maior probabilidade entre os candidatos. |
+| **M, flexibilidade de combinação** | Média por coluna do valor de combinação disponível. O valor depende do número de participantes (2, 3, 4 e 5 peças: 0,6, 0,8, 0,9 e 1,0) e é maior em combinações mais altas na coluna. Favorece jogadas flexíveis. |
+| **C, congestionamento** | Risco por coluna = fração preenchida após a jogada × (1 − 0,6 × valor da combinação). `C = 0,6 × menor risco + 0,4 × risco médio`. Favorece peças sem bom encaixe. |
+| **P, progressão** | Posição do valor numa escala logarítmica entre `2` e o maior candidato elegível (0 para o menor, 1 para o maior). |
+
+Pontuação final: `score = wF·F + wM·M + wC·C + wP·P`.
+
+Os pesos são interpolados linearmente conforme a pressão normalizada, em três âncoras (0, 0,5 e 1). Os valores são os padrões do asset `PieceGenerationConfig`:
+
+| Pressão | F | M | C | P |
+|---|---:|---:|---:|---:|
+| Baixa (0) | 0,45 | 0,40 | 0,15 | 0,00 |
+| Moderada (0,5) | 0,25 | 0,35 | 0,30 | 0,10 |
+| Alta (1) | 0,10 | 0,20 | 0,50 | 0,20 |
+
+Efeito esperado: em pressão baixa, a geração favorece peças com boas combinações, para que o início seja tranquilo. Em pressão alta, o congestionamento domina, mas peças que combinam continuam possíveis, então a recuperação segue viável.
+
+#### Seleção
+
+- `peso(v) = exp((score(v) − maior score) / T)`, com `T = 0,8`. Valores com score maior têm peso maior.
+- As probabilidades são normalizadas e misturadas com um piso uniforme de 1% (limitado a `1/n`), para que todo candidato legal continue possível.
+- A escolha usa um único sorteio de `IRandomSource` por peça (`SpawnTable.Pick`).
+- Se nenhum candidato for pontuado, a geração usa as probabilidades base, sem valores sem pontuação.
 
 ### Combinação
 
@@ -309,13 +378,54 @@ Arquivos: `BoardSnapshot.cs`, `MoveResult.cs`, `CascadeResult.cs`, `CascadeStep.
 
 ### 9.3 Geração de peças
 
-Arquivos: `PieceGenerator.cs`, `SpawnTable.cs`, `RandomSource.cs`
+Arquivos: `PieceGenerator.cs`, `PieceGenerationSettings.cs`, `BoardPressureCalculator.cs`, `PieceDifficultyEvaluator.cs`, `CandidateSelection.cs`, `PieceGenerationDecision.cs`, `SpawnTable.cs`, `RandomSource.cs`
 
-- `PieceGenerator.Reset(board)` gera `Current` e `Next` a partir do tabuleiro.
-- `Restore(current, next)` restaura a fila salva.
-- `Advance(board)` promove `Next` e gera um novo `Next`.
-- `SpawnTable.Build(board)` calcula as probabilidades (ver seção 6). `SpawnTable.Pick` sorteia com resolução de 1.000.000.
-- `IRandomSource` permite substituir o gerador. `SystemRandomSource` usa `System.Random`.
+Pipeline de cada peça (`PieceGenerator.GenerateValue`):
+
+1. `SpawnTable.Build(board)`: valores elegíveis e probabilidades base.
+2. `BoardPressureCalculator.Calculate(board)`: pressão bruta e normalizada.
+3. `PieceDifficultyEvaluator.Evaluate(...)`: componentes F, M, C, P e score de cada candidato, com os pesos da pressão.
+4. `CandidateSelection.Compute(...)`: softmax com temperatura e piso uniforme.
+5. `SpawnTable.Pick(...)`: um sorteio com `IRandomSource`.
+
+Propriedades:
+
+- `PieceGenerator` mantém a API anterior: `Reset(board)`, `Restore(current, next)`, `Advance(board)`, `Current` e `Next`.
+- Não altera o tabuleiro. Consome um sorteio por peça (`Reset` consome dois, `Advance` consome um). A avaliação não consome aleatoriedade.
+- As listas de trabalho são reaproveitadas entre jogadas, para evitar alocações a cada peça.
+- Todas as classes da pipeline são puras (sem `MonoBehaviour`) e recebem dependências por construtor.
+- `IRandomSource` permite substituir o gerador. `SystemRandomSource` usa `System.Random`. Com uma semente fixa, a sequência é reproduzível.
+
+Diagnóstico:
+
+- `RecordDecisions` (bool, padrão `false`): quando `true`, `LastDecision` guarda a pressão, os pesos, os componentes de cada candidato, a probabilidade e o valor escolhido.
+- `LogDecisions` (existe só em editor e builds de desenvolvimento, padrão `false`): imprime cada decisão no console do Unity.
+
+Balanceamento por asset. Todos os parâmetros ficam no asset `Assets/!/Settings/PieceGenerationConfig.asset` (tipo `PieceGenerationConfig`, ScriptableObject). Para criar outro, use Assets > Create > Number Merge > Piece Generation Config.
+
+- `GameplayScreen` tem o campo `Piece Generation Config`. Ele passa `Settings` para `new PieceGenerator(random, settings)`. Se o campo estiver vazio, o jogo usa os valores padrão de `PieceGenerationSettings`.
+- Alterar o asset no Inspector muda o jogo na próxima partida iniciada. Não é preciso mudar código.
+- `OnValidate` do asset registra no console um erro com o nome do asset quando um valor é inválido. O `PieceGenerator` também recusa valores inválidos ao ser criado.
+- Os campos têm tooltips e sliders (`Range`) no Inspector.
+
+Parâmetros (`PieceGenerationSettings`, serializados no asset):
+
+| Parâmetro | Padrão | Efeito |
+|---|---|---|
+| `HeightPressureWeight` / `DensityPressureWeight` / `ImbalancePressureWeight` | 0,50 / 0,30 / 0,20 | Peso de cada sinal da pressão. |
+| `LowPressureWeights` / `ModeratePressureWeights` / `HighPressureWeights` | ver seção 6 | Pesos de F, M, C e P nas três âncoras. |
+| `ModeratePressurePoint` | 0,5 | Posição da âncora moderada na pressão normalizada. |
+| `AbsentValueWeight` | 0,5 | Peso de cada potência de 2 ausente do tabuleiro (em peças). `0` restaura a regra antiga de só nascer o que já está no tabuleiro. |
+| `SpawnCeilingLevelOffset` | -1 | Teto de geração em níveis a partir da maior peça: `maior × 2^nível`, limitado a 8192. Negativo = abaixo da maior peça, positivo = acima. Faixa de -10 a 10. |
+| `SpawnHardCeiling` | 0 | Teto fixo para peças geradas: nenhuma peça acima deste valor nasce. `0` = sem teto. Potência de 2 de 2 a 8192. Não limita o resultado das combinações. |
+| `Temperature` | 0,8 | Nitidez da seleção. Valores menores tornam a escolha mais decisiva. |
+| `MinimumCandidateProbability` | 0,01 | Piso uniforme por candidato, limitado a `1/n`. |
+| `MergeParticipantValues` | 0,6 / 0,8 / 0,9 / 1,0 | Valor da combinação por número de participantes (2 a 5). |
+| `MergeHeightBias` | 0,5 | Quanto uma combinação perto da base da coluna vale menos. |
+| `MergeReliefFactor` | 0,6 | Quanto uma combinação reduz o risco de uma coluna. |
+| `CongestionBestColumnWeight` | 0,6 | Peso da coluna mais segura no congestionamento (o restante é a média). |
+
+O piso `SpawnTable.MinimumValueChance` (20% para o `2`) continua em `SpawnTable.cs`. Ele alimenta a probabilidade base F.
 
 ### 9.4 Combinação
 
@@ -555,15 +665,24 @@ As animações de combinação e gravidade continuam em coroutines com interpola
    - Game over com pontos e recorde, e reinício.
    - F12 abrindo o overlay de debug, com “limpar dados e reiniciar”.
 
+Testes automatizados:
+
+1. Abrir Window > General > Test Runner.
+2. Selecionar a aba EditMode e executar todos os testes, ou filtrar pela assembly `Assembly-CSharp-Editor`.
+3. Resultado esperado: 72 testes aprovados (`BoardPressureCalculatorTests`, `PieceDifficultyEvaluatorTests`, `CandidateSelectionTests`, `PieceGeneratorTests`, `PieceGenerationConfigTests`).
+
+Os testes exigem a janela do Editor em foco. Sem foco, a execução fica bloqueada.
+
 Build: `EditorBuildSettings.asset` contém apenas `Assets/!/Scenes/Gameplay.unity`.
 
 ## 13. Verificações realizadas
 
-Esta atualização foi feita por leitura do código-fonte e dos arquivos de cena e configuração. O Unity Editor não estava em execução, então as verificações abaixo **não foram refeitas nesta atualização**:
+As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectado, após a mudança na geração de peças:
 
 | Verificação | Estado |
 |---|---|
-| Compilação sem erros | Não verificada nesta atualização (último registro: 0 erros, versão anterior) |
+| Compilação sem erros | Verificada: 0 erros, em `Assembly-CSharp` e `Assembly-CSharp-Editor` |
+| Testes EditMode da geração de peças | 72 de 72 aprovados (assembly `Assembly-CSharp-Editor`) |
 | Referências ausentes na cena | Não verificadas nesta atualização (último registro: 0, versão anterior) |
 | Referências de inspector em `Gameplay.unity` | Presentes para `AudioManager`, `BoardView` e `PieceQueueView` (verificado por leitura do YAML) |
 | Toque real no Editor | Pendente de teste manual |
@@ -572,7 +691,8 @@ Esta atualização foi feita por leitura do código-fonte e dos arquivos de cena
 
 ### Prioridade alta
 
-1. Verificar compilação e referências ausentes com o Unity aberto.
+1. Verificar referências ausentes na cena com o Unity aberto.
+1a. Playtest da geração adaptativa. Ajustar primeiro `Temperature` e, depois, os pesos de congestionamento (alta pressão) e de flexibilidade (baixa pressão), no asset `PieceGenerationConfig`.
 2. Testar toque real em dispositivo ou no Editor com mouse.
 3. Definir a orientação e a resolução alvo, e revisar o CanvasScaler.
 4. Testar um build com `Gameplay` (inclui o ciclo de save, game over e reinício).
@@ -580,7 +700,7 @@ Esta atualização foi feita por leitura do código-fonte e dos arquivos de cena
 ### Prioridade média
 
 5. Criar a cena de menu e a transição para o gameplay, ou remover o `MainMenu` e o `ContinueButton` se não forem usados.
-6. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `SpawnTable`, `ScoreService` e `BoardState`.
+6. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `ScoreService` e `BoardState`. A geração de peças já tem testes.
 7. Ligar os efeitos sonoros (`PlaySfx`) ao drop, à combinação e ao game over.
 
 ### Prioridade baixa
@@ -600,8 +720,16 @@ Esta atualização foi feita por leitura do código-fonte e dos arquivos de cena
 | `Assets/!/Scripts/Gameplay/CascadeResolver.cs` | Resolve cascatas com proteções |
 | `Assets/!/Scripts/Gameplay/MergeResolver.cs` | Escolhe e aplica uma combinação |
 | `Assets/!/Scripts/Gameplay/MergeMath.cs` | Fórmula e limites de combinação |
-| `Assets/!/Scripts/Gameplay/PieceGenerator.cs` | Fila de peças (atual e próxima) |
-| `Assets/!/Scripts/Gameplay/SpawnTable.cs` | Probabilidades de geração adaptativas |
+| `Assets/!/Scripts/Gameplay/PieceGenerator.cs` | Fila de peças (atual e próxima); orquestra a geração |
+| `Assets/!/Scripts/Gameplay/PieceGenerationSettings.cs` | Todos os parâmetros de ajuste da geração |
+| `Assets/!/Scripts/Gameplay/BoardPressureCalculator.cs` | Pressão do tabuleiro (bruta e normalizada) |
+| `Assets/!/Scripts/Gameplay/PieceDifficultyEvaluator.cs` | Componentes F, M, C, P e score de cada candidato |
+| `Assets/!/Scripts/Gameplay/CandidateSelection.cs` | Softmax e piso uniforme das probabilidades |
+| `Assets/!/Scripts/Gameplay/PieceGenerationDecision.cs` | Registro de diagnóstico de cada geração |
+| `Assets/!/Scripts/Gameplay/PieceGenerationConfig.cs` | ScriptableObject com os parâmetros de balanceamento |
+| `Assets/!/Settings/PieceGenerationConfig.asset` | Asset de balanceamento usado pelo `GameplayScreen` |
+| `Assets/!/Scripts/Gameplay/SpawnTable.cs` | Elegibilidade e probabilidades base |
+| `Assets/!/Tests/Editor/` | Testes EditMode da geração de peças |
 | `Assets/!/Scripts/Gameplay/RandomSource.cs` | Fonte de aleatoriedade substituível |
 | `Assets/!/Scripts/Gameplay/BoardSnapshot.cs` | Cópia do tabuleiro para animação |
 | `Assets/!/Scripts/Gameplay/MoveResult.cs` | Dados de uma jogada completa |
@@ -630,7 +758,14 @@ Esta atualização foi feita por leitura do código-fonte e dos arquivos de cena
 
 Esta seção resume o que mudou em relação ao documento de 2026-10-23:
 
-- **Geração de peças:** deixou de ser fixa (90% `2`, 10% `4`). Agora é adaptativa (`SpawnTable`), com o `2` com no mínimo 20%.
+- **Geração de peças com pressão do tabuleiro (2026-10-28):** a escolha final passou a depender da pressão do tabuleiro. A pressão combina altura, densidade e desequilíbrio. Cada candidato é pontuado em frequência, flexibilidade de combinação, congestionamento e progressão, com pesos que mudam com a pressão. A seleção usa softmax com temperatura 0,8. A elegibilidade e a probabilidade base continuam vindo de `SpawnTable`, sem alteração de regra. Detalhes na seção 6 e na seção 9.3.
+- **Balanceamento por asset (2026-10-28):** os parâmetros da geração de peças estão no ScriptableObject `PieceGenerationConfig` (`Assets/!/Settings/PieceGenerationConfig.asset`). O `GameplayScreen` o usa para criar o `PieceGenerator`.
+- **Peças fora do tabuleiro (2026-10-28):** potências de 2 abaixo do limite agora podem nascer mesmo sem estar no tabuleiro, com peso `AbsentValueWeight`. Antes só nascia o que já estava no tabuleiro, mais o `2`.
+- **Teto de geração (2026-10-28):** o teto passou de "menor que a segunda maior peça" para "até a segunda maior peça, inclusive". Medição com jogadas aleatórias nas 25 primeiras peças de 300 partidas: peças com uma única opção caíram de 63% para 30%, e o `2` de 83% para 59%.
+- **Teto configurável (2026-10-28):** o teto de geração deixou de ser a segunda maior peça e passou a ser `maior peça × 2^SpawnCeilingLevelOffset` (padrão -1), exposto no asset `PieceGenerationConfig`. Positivos permitem valores acima da maior peça; negativos, valores abaixo dela.
+- **Teto fixo de geração (2026-10-28):** `SpawnHardCeiling` limita o maior valor que pode nascer, independentemente do tabuleiro. Não afeta as combinações. Padrão `0` (sem teto).
+- **Testes automatizados:** 72 testes EditMode para a geração de peças.
+- **Geração de peças:** deixou de ser fixa (90% `2`, 10% `4`). Passou a ser adaptativa (`SpawnTable`), com o `2` com no mínimo 20%.
 - **Fórmula de combinação corrigida na documentação:** o resultado é `valor × 2^(participantes − 1)`. A versão anterior descrevia `valor × (participantes − 1) × 2`, que dá resultados diferentes para 4 e 5 participantes (por exemplo, 16 em vez de 12 para 4 participantes com `2`).
 - **Recorde persistido:** deixou de ser apenas em memória. Salvo em `PlayerPrefs`.
 - **Partida retomável:** o tabuleiro, a fila e a pontuação são salvos após cada jogada e restaurados ao abrir o jogo.

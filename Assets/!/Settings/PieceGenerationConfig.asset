@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0ed3dfaa96a78040ade9f368cb79458, type: 3}
+  m_Name: PieceGenerationConfig
+  m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.Gameplay.PieceGenerationConfig
+  _settings:
+    HeightPressureWeight: 0.5
+    DensityPressureWeight: 0.3
+    ImbalancePressureWeight: 0.2
+    LowPressureWeights:
+      Frequency: 0.45
+      MergeOpportunity: 0.4
+      Congestion: 0.15
+      Progression: 0
+    ModeratePressureWeights:
+      Frequency: 0.25
+      MergeOpportunity: 0.35
+      Congestion: 0.3
+      Progression: 0.1
+    HighPressureWeights:
+      Frequency: 0.1
+      MergeOpportunity: 0.2
+      Congestion: 0.5
+      Progression: 0.2
+    ModeratePressurePoint: 0.5
+    Temperature: 0.8
+    MinimumCandidateProbability: 0.01
+    MergeParticipantValues:
+    - 0.6
+    - 0.8
+    - 0.9
+    - 1
+    MergeHeightBias: 0.5
+    MergeReliefFactor: 0.6
+    CongestionBestColumnWeight: 0.6

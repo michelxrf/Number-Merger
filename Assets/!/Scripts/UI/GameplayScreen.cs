@@ -15,6 +15,8 @@ namespace NumberMerge.UI
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private GameOverScreen _gameOverScreen;
+        [Tooltip("Balance asset for piece generation. If empty, the default settings are used.")]
+        [SerializeField] private PieceGenerationConfig _pieceGenerationConfig;
 
         private BoardController _controller;
         private PieceGenerator _pieces;
@@ -48,7 +50,7 @@ namespace NumberMerge.UI
                 restored.ColumnCount == _boardView.ColumnCount &&
                 restored.VisibleRowCount == _boardView.VisibleRowCount)
             {
-                _pieces = new PieceGenerator();
+                _pieces = CreatePieceGenerator();
                 _pieces.Restore(saved.CurrentPiece, saved.NextPiece);
                 _controller = new BoardController(restored, new CascadeResolver(), new ScoreService(record, score));
 
@@ -68,13 +70,23 @@ namespace NumberMerge.UI
 
             var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
             _controller = new BoardController(board, new CascadeResolver(), new ScoreService(record));
-            _pieces = new PieceGenerator();
+            _pieces = CreatePieceGenerator();
             _pieces.Reset(board);
+        }
+
+        private PieceGenerator CreatePieceGenerator()
+        {
+            if (_pieceGenerationConfig == null)
+            {
+                return new PieceGenerator();
+            }
+
+            return new PieceGenerator(new SystemRandomSource(), _pieceGenerationConfig.Settings);
         }
 
         private void Update()
         {
-            if (DebugScreen.IsOpen || _controller == null || _controller.IsGameOver || _isAnimating)
+            if (DebugScreen.IsOpen || PauseMenu.IsPaused || _controller == null || _controller.IsGameOver || _isAnimating)
             {
                 return;
             }
@@ -137,6 +149,12 @@ namespace NumberMerge.UI
 
         private void BeginPreview(Vector2 screenPosition)
         {
+            // Presses outside the board (e.g. the pause button) must not start a drop.
+            if (!RectTransformUtility.RectangleContainsScreenPoint(_boardRect, screenPosition, null))
+            {
+                return;
+            }
+
             _isPreviewing = true;
             _previewColumn = -1;
             _queueView.BeginPreview();
@@ -231,7 +249,7 @@ namespace NumberMerge.UI
 
         private void RefreshUi()
         {
-            _scoreText.text = "Pontos: " + _controller.CurrentScore + "    Recorde: " + _controller.Record;
+            _scoreText.text = "Pontos: " + _controller.CurrentScore + "\nRecorde: " + _controller.Record;
 
             if (_controller.IsGameOver)
             {
