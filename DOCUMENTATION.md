@@ -1,6 +1,6 @@
 # Number Merge — Documentação do Estado Atual
 
-> Última atualização: 2026-10-28  
+> Última atualização: 2026-10-29  
 > Projeto: `D:\Projects\Number Merger`  
 > Unity: `6000.3.10f1`  
 > Último commit incluído: `9d541ef bug fix`
@@ -125,9 +125,11 @@ Assets/
       Save/
         BoardState.cs, SaveSystem.cs
       UI/
-        BoardView.cs, DebugScreen.cs, FullscreenBackground.cs,
-        GameOverScreen.cs, GameplayScreen.cs, PieceQueueView.cs,
+        BoardView.cs, BoardViewConfig.cs (ScriptableObject), DebugScreen.cs,
+        FullscreenBackground.cs, GameOverScreen.cs, GameplayScreen.cs, PieceQueueView.cs,
         TileTheme.cs, TileView.cs
+    Data/
+      BoardViewConfig.asset  Layout e durações de animação do tabuleiro (ScriptableObject)
     Settings/
       PieceGenerationConfig.asset  Balanceamento da geração de peças (ScriptableObject)
     Sprites/                Tiles, slot, fundos, partículas
@@ -178,7 +180,7 @@ AudioManager (singleton, DontDestroyOnLoad) ──► AudioMixer
 
 - **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `RandomSource`, e a geração de peças: `PieceGenerator`, `PieceGenerationSettings`, `SpawnTable`, `BoardPressureCalculator`, `PieceDifficultyEvaluator`, `CandidateSelection`, `PieceGenerationDecision`.
 - **Persistência:** `SaveSystem`, `BoardState`.
-- **Apresentação:** `GameplayScreen`, `BoardView`, `PieceQueueView`, `TileView`, `TileTheme`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
+- **Apresentação:** `GameplayScreen`, `BoardView`, `BoardViewConfig`, `PieceQueueView`, `TileView`, `TileTheme`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
 - **Áudio:** `AudioManager`.
 - **Dados de resultado:** `BoardSnapshot`, `MoveResult`, `CascadeResult`, `CascadeStep`, `MergeOutcome`, `BoardPosition`.
 
@@ -485,10 +487,19 @@ Arquivo: `Assets/!/Scripts/UI/BoardView.cs`
 Responsável pela representação visual do tabuleiro:
 
 - Cria as células de fundo (`Cell_c_r`) apenas para as linhas visíveis, em `EnsureBuilt`. A linha de overflow não tem célula de fundo.
-- Tamanho da célula: o maior valor que cabe no `RectTransform` do próprio objeto, a menos que `_cellSizeOverride` seja maior que zero. Espaçamento configurável (padrão 6 px).
+- Tamanho da célula: o maior valor que cabe no `RectTransform` do próprio objeto, a menos que `CellSizeOverride` seja maior que zero. Espaçamento vem do config (`Spacing`).
 - Cria e destrói `TileView` conforme os snapshots (`SetBoard`).
 - `GetNearestColumn` converte posição local em coluna; `GetColumnCenterX` retorna o centro da coluna; `GetDropStartLocalY` retorna o ponto acima da linha de entrada.
-- Duração configurável de cada animação: inserção (0,18 s), combinação (0,12 s), pop (0,12 s) e gravidade (0,12 s).
+- Durações das animações (inserção, combinação, pop e gravidade) vêm do config.
+
+Configuração (`BoardViewConfig`, ScriptableObject):
+
+- O `BoardView` tem o campo `Config` (`_config`), que aponta para `Assets/!/Data/BoardViewConfig.asset`. Sem config atribuído, o `BoardView` registra um erro e usa os valores padrão internos.
+- Valores de grade: `ColumnCount` (5), `VisibleRowCount` (7), `Spacing` (padrão 6 px; o asset usado na cena `Gameplay` está em 3 px) e `CellSizeOverride` (0 = ajustar ao `RectTransform`).
+- Durações em segundos: `InsertDuration` (0,18), `MergeDuration` (0,12), `PopDuration` (0,12) e `GravityDuration` (0,12).
+- Os valores são copiados para campos de runtime em `Start`. Como o `GameplayScreen.Awake` lê `ColumnCount` e chama `Initialize` antes de `Start`, a configuração também é carregada no primeiro acesso (`EnsureConfigLoaded`), então a ordem de execução não afeta o resultado.
+- Alterar o asset no Inspector muda o tabuleiro na próxima vez que a cena for carregada. Não é preciso mudar código.
+- `TileTheme` e o prefab `Tile` continuam como referências diretas no `BoardView`, fora do config.
 
 `PlayMove` executa:
 
@@ -640,10 +651,12 @@ O caminho de input foi implementado com a API padrão do Input System, mas a sim
 | Prévia horizontal | LeanTween `move`, `easeOutQuad`, `0.12s` |
 | Retorno ao centro | LeanTween `move`, `easeOutQuad`, `0.12s` |
 | Promoção da fila | LeanTween `move` + `scale`, `easeOutBack`, `0.3s` |
-| Inserção no tabuleiro | LeanTween `move` + `scale` + `value`, `0.18s` |
-| Combinação | Coroutine com interpolação smoothstep, `0.12s` |
-| Pop do resultado | Coroutine com interpolação, `0.12s` |
-| Gravidade | Coroutine com interpolação smoothstep, `0.12s` |
+| Inserção no tabuleiro | LeanTween `move` + `scale` + `value`, duração `InsertDuration` (0,18s) |
+| Combinação | Coroutine com interpolação smoothstep, duração `MergeDuration` (0,12s) |
+| Pop do resultado | Coroutine com interpolação, duração `PopDuration` (0,12s) |
+| Gravidade | Coroutine com interpolação smoothstep, duração `GravityDuration` (0,12s) |
+
+As durações marcadas acima vêm do `BoardViewConfig`.
 
 As animações de combinação e gravidade continuam em coroutines com interpolação manual. Isso foi mantido porque o fluxo já estava estável.
 
@@ -742,6 +755,8 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 | `Assets/!/Scripts/Audio/AudioManager.cs` | Música e volumes via AudioMixer |
 | `Assets/!/Scripts/UI/GameplayScreen.cs` | Controlador da cena, input e salvamento |
 | `Assets/!/Scripts/UI/BoardView.cs` | Visual do tabuleiro e animações |
+| `Assets/!/Scripts/UI/BoardViewConfig.cs` | ScriptableObject com grade e durações do tabuleiro |
+| `Assets/!/Data/BoardViewConfig.asset` | Asset de configuração usado pelo `BoardView` |
 | `Assets/!/Scripts/UI/PieceQueueView.cs` | Fila visual de duas peças |
 | `Assets/!/Scripts/UI/TileView.cs` | Visual individual de tile |
 | `Assets/!/Scripts/UI/TileTheme.cs` | Sprites e cores das peças e do tabuleiro |
@@ -757,6 +772,8 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 ## 16. Mudanças desde a versão anterior
 
 Esta seção resume o que mudou em relação ao documento de 2026-10-23:
+
+- **Configuração do tabuleiro em ScriptableObject (2026-10-29):** `ColumnCount`, `VisibleRowCount`, `Spacing`, `CellSizeOverride` e as quatro durações de animação saíram do `BoardView` e foram para o `BoardViewConfig` (`Assets/!/Data/BoardViewConfig.asset`). O `BoardView` carrega esses valores em `Start` (também no primeiro acesso, antes de `Start`). O asset foi criado com os valores que a cena usava, incluindo `Spacing` = 3. Detalhes na seção 9.7.
 
 - **Geração de peças com pressão do tabuleiro (2026-10-28):** a escolha final passou a depender da pressão do tabuleiro. A pressão combina altura, densidade e desequilíbrio. Cada candidato é pontuado em frequência, flexibilidade de combinação, congestionamento e progressão, com pesos que mudam com a pressão. A seleção usa softmax com temperatura 0,8. A elegibilidade e a probabilidade base continuam vindo de `SpawnTable`, sem alteração de regra. Detalhes na seção 6 e na seção 9.3.
 - **Balanceamento por asset (2026-10-28):** os parâmetros da geração de peças estão no ScriptableObject `PieceGenerationConfig` (`Assets/!/Settings/PieceGenerationConfig.asset`). O `GameplayScreen` o usa para criar o `PieceGenerator`.

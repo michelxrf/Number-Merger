@@ -12,20 +12,19 @@ namespace NumberMerge.UI
         [SerializeField] private TileView _tilePrefab;
         [Tooltip("Provides the slot sprite and the piece sprites and text color.")]
         [SerializeField] private TileTheme _theme;
+        [Tooltip("Grid and animation settings. Loaded on Start.")]
+        [SerializeField] private BoardViewConfig _config;
 
-        [Header("Grid")]
-        [Tooltip("Number of columns in the grid.")]
-        [SerializeField, Min(1)] private int _columnCount = 5;
-        [Tooltip("Number of visible rows. One extra overflow row is added above them.")]
-        [SerializeField, Min(1)] private int _visibleRowCount = 7;
-        [Tooltip("Gap between cells, in pixels.")]
-        [SerializeField, Min(0f)] private float _spacing = 6f;
-        [Tooltip("Cell size in pixels. 0 = fit the grid inside this object's RectTransform.")]
-        [SerializeField, Min(0f)] private float _cellSizeOverride = 0f;
-        [SerializeField] private float _insertDuration = 0.18f;
-        [SerializeField] private float _mergeDuration = 0.12f;
-        [SerializeField] private float _popDuration = 0.12f;
-        [SerializeField] private float _gravityDuration = 0.12f;
+        // Runtime values, copied from _config on Start.
+        private int _columnCount = 5;
+        private int _visibleRowCount = 7;
+        private float _spacing = 6f;
+        private float _cellSizeOverride = 0f;
+        private float _insertDuration = 0.18f;
+        private float _mergeDuration = 0.12f;
+        private float _popDuration = 0.12f;
+        private float _gravityDuration = 0.12f;
+        private bool _configLoaded;
 
         private readonly List<TileView> _spawnedTiles = new List<TileView>();
         private TileView[,] _tileGrid;
@@ -35,9 +34,25 @@ namespace NumberMerge.UI
         private float _gridHeight;
         private bool _built;
 
-        public int ColumnCount => _columnCount;
-        public int VisibleRowCount => _visibleRowCount;
-        public int TotalRowCount => _visibleRowCount + 1;
+        public int ColumnCount
+        {
+            get
+            {
+                EnsureConfigLoaded();
+                return _columnCount;
+            }
+        }
+
+        public int VisibleRowCount
+        {
+            get
+            {
+                EnsureConfigLoaded();
+                return _visibleRowCount;
+            }
+        }
+
+        public int TotalRowCount => VisibleRowCount + 1;
 
         // Size of one cell in pixels, valid after the grid is built.
         public float CellSize
@@ -47,6 +62,38 @@ namespace NumberMerge.UI
                 EnsureBuilt();
                 return _cellSize;
             }
+        }
+
+        private void Start()
+        {
+            EnsureConfigLoaded();
+        }
+
+        // Start normally loads the config first, but other components can call into this view
+        // earlier (e.g. GameplayScreen.Awake), so the first access loads it as well.
+        private void EnsureConfigLoaded()
+        {
+            if (_configLoaded)
+            {
+                return;
+            }
+
+            _configLoaded = true;
+
+            if (_config == null)
+            {
+                Debug.LogError("BoardView has no BoardViewConfig assigned. Using built-in defaults.", this);
+                return;
+            }
+
+            _columnCount = _config.ColumnCount;
+            _visibleRowCount = _config.VisibleRowCount;
+            _spacing = _config.Spacing;
+            _cellSizeOverride = _config.CellSizeOverride;
+            _insertDuration = _config.InsertDuration;
+            _mergeDuration = _config.MergeDuration;
+            _popDuration = _config.PopDuration;
+            _gravityDuration = _config.GravityDuration;
         }
 
         public void Initialize(BoardModel board)
@@ -150,6 +197,7 @@ namespace NumberMerge.UI
                 return;
             }
 
+            EnsureConfigLoaded();
             _rectTransform = GetComponent<RectTransform>();
             _tileGrid = new TileView[TotalRowCount, ColumnCount];
 

@@ -20,6 +20,12 @@ namespace NumberMerge.UI
             _overlay.SetActive(false);
         }
 
+        public void SetTextColor(Color color)
+        {
+            _scoreText.color = color;
+            _recordText.color = color;
+        }
+
         public void Show(long score, long record)
         {
             _scoreText.text = "Pontos: " + score;

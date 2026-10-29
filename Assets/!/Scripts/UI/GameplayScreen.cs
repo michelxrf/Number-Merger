@@ -17,6 +17,10 @@ namespace NumberMerge.UI
         [SerializeField] private GameOverScreen _gameOverScreen;
         [Tooltip("Balance asset for piece generation. If empty, the default settings are used.")]
         [SerializeField] private PieceGenerationConfig _pieceGenerationConfig;
+        [Tooltip("Theme whose Background Sprites are picked from at random on load.")]
+        [SerializeField] private TileTheme _theme;
+        [Tooltip("SpriteRenderer of the BackgroundSprite object that displays the chosen background.")]
+        [SerializeField] private SpriteRenderer _backgroundRenderer;
 
         private BoardController _controller;
         private PieceGenerator _pieces;
@@ -29,6 +33,8 @@ namespace NumberMerge.UI
         {
             _boardRect = _boardView.GetComponent<RectTransform>();
 
+            ApplyRandomBackground();
+            ApplyTextColor();
             LoadOrStartGame();
 
             _boardView.Initialize(_controller.Board);
@@ -37,6 +43,39 @@ namespace NumberMerge.UI
 
             // The player has control from the start, so save the initial state now.
             SaveProgress();
+        }
+
+        // Picks one of the theme's background sprites at random. Keeps the current sprite if none are assigned.
+        private void ApplyRandomBackground()
+        {
+            if (_backgroundRenderer == null || _theme == null)
+            {
+                return;
+            }
+
+            Sprite background = _theme.GetRandomBackgroundSprite();
+            if (background != null)
+            {
+                _backgroundRenderer.sprite = background;
+            }
+        }
+
+        // Applies the theme's text color to every text in the game (score, status, and game over screen).
+        private void ApplyTextColor()
+        {
+            if (_theme == null)
+            {
+                return;
+            }
+
+            Color color = _theme.TextColor;
+            _scoreText.color = color;
+            _statusText.color = color;
+
+            if (_gameOverScreen != null)
+            {
+                _gameOverScreen.SetTextColor(color);
+            }
         }
 
         // Restores the saved board when there is one; otherwise starts a new game with the saved record.

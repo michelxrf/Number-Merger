@@ -1,5 +1,6 @@
 using NumberMerge.Audio;
 using NumberMerge.Save;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -10,6 +11,8 @@ namespace NumberMerge.UI
     {
         private const string GameplaySceneName = "Gameplay";
 
+        [Tooltip("Theme whose Text Color is applied to every text in the pause overlay.")]
+        [SerializeField] private TileTheme _theme;
         [SerializeField] private GameObject _overlay;
         [SerializeField] private Button _pauseButton;
         [SerializeField] private Button _closeButton;
@@ -31,7 +34,22 @@ namespace NumberMerge.UI
             _musicSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
             _sfxSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
 
+            ApplyTextColor();
             _overlay.SetActive(false);
+        }
+
+        // Covers every text under the overlay, including labels of buttons.
+        private void ApplyTextColor()
+        {
+            if (_theme == null)
+            {
+                return;
+            }
+
+            foreach (TMP_Text text in _overlay.GetComponentsInChildren<TMP_Text>(true))
+            {
+                text.color = _theme.TextColor;
+            }
         }
 
         private void OnDestroy()

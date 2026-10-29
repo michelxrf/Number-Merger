@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DefaultTileTheme
   m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.UI.TileTheme
   _slotSprite: {fileID: 21300000, guid: 708c122f8a91e284abf28f98b35e8eb1, type: 3}
-  _textColor: {r: 0.282353, g: 0.2392157, b: 0.5450981, a: 1}
+  _textColor: {r: 0, g: 0, b: 0, a: 1}
   _fallbackPieceSprite: {fileID: 21300000, guid: 708c122f8a91e284abf28f98b35e8eb1, type: 3}
   _pieceSprites:
   - {fileID: -1295094456, guid: ba0cb42547602404d88df8394e432306, type: 3}
@@ -31,3 +31,7 @@ MonoBehaviour:
   - {fileID: 774377629, guid: ba0cb42547602404d88df8394e432306, type: 3}
   - {fileID: 777235959, guid: ba0cb42547602404d88df8394e432306, type: 3}
   _badTileSprite: {fileID: 21300000, guid: 5d147857f07e5444a98e8cdc2b94590a, type: 3}
+  _backgroundSprites:
+  - {fileID: 21300000, guid: 04c729a867d112540bca7551b6263b72, type: 3}
+  - {fileID: 21300000, guid: ddd7cf181cab57b48b867bb306b308cf, type: 3}
+  - {fileID: 21300000, guid: 3ad46f75daabc6942a11061dd2e9fccc, type: 3}
