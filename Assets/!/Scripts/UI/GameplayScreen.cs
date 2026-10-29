@@ -1,4 +1,5 @@
 using System.Collections;
+using NumberMerge.Audio;
 using NumberMerge.Gameplay;
 using NumberMerge.Managers;
 using NumberMerge.Save;
@@ -40,6 +41,9 @@ namespace NumberMerge.UI
             _boardView.Initialize(_controller.Board);
             InitializeQueue();
             RefreshUi();
+
+            // Plays on every gameplay scene load, including when a saved board is restored.
+            AudioManager.Instance?.Play(SfxId.GameStart);
 
             // The player has control from the start, so save the initial state now.
             SaveProgress();
@@ -212,6 +216,20 @@ namespace NumberMerge.UI
             _previewColumn = column;
             float x = _boardRect.anchoredPosition.x + _boardView.GetColumnCenterX(column);
             _queueView.MovePreviewTo(x);
+            UpdateInsertionGhost(column);
+        }
+
+        // Shows the ghost on the cell where the piece would land: the lowest empty row of the column.
+        private void UpdateInsertionGhost(int column)
+        {
+            if (_controller.Board.TryFindLowestEmptyRow(column, out int row))
+            {
+                _boardView.ShowInsertionPreview(column, row);
+            }
+            else
+            {
+                _boardView.HideInsertionPreview();
+            }
         }
 
         private int GetColumnAt(Vector2 screenPosition)
@@ -228,6 +246,7 @@ namespace NumberMerge.UI
         private void CommitPreview()
         {
             _isPreviewing = false;
+            _boardView.HideInsertionPreview();
 
             int column = _previewColumn;
             _previewColumn = -1;

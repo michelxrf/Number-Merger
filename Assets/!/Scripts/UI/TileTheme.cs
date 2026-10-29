@@ -11,6 +11,10 @@ namespace NumberMerge.UI
         [Header("Board")]
         [Tooltip("Sprite of every empty slot on the board.")]
         [SerializeField] private Sprite _slotSprite;
+        [Tooltip("Ghost sprite shown where the dragged piece will land.")]
+        [SerializeField] private Sprite _insertPreviewSprite;
+        [Tooltip("Tint of the insert preview ghost. Its alpha sets the transparency.")]
+        [SerializeField] private Color _insertPreviewColor = new Color(0.45f, 1f, 0.45f, 0.5f);
 
         [Header("Pieces")]
         [Tooltip("Color of all texts in the game: piece values, score, status, and game over screen.")]
@@ -29,6 +33,8 @@ namespace NumberMerge.UI
         [SerializeField] private Sprite[] _backgroundSprites;
 
         public Sprite SlotSprite => _slotSprite;
+        public Sprite InsertPreviewSprite => _insertPreviewSprite;
+        public Color InsertPreviewColor => _insertPreviewColor;
         public Color TextColor => _textColor;
         public Sprite BadTileSprite => _badTileSprite;
 

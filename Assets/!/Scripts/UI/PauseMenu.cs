@@ -28,9 +28,9 @@ namespace NumberMerge.UI
             Time.timeScale = 1f;
             IsPaused = false;
 
-            _pauseButton.onClick.AddListener(Pause);
-            _closeButton.onClick.AddListener(Resume);
-            _restartButton.onClick.AddListener(Restart);
+            _pauseButton.onClick.AddListener(() => { PlayButtonSound(); Pause(); });
+            _closeButton.onClick.AddListener(() => { PlayButtonSound(); Resume(); });
+            _restartButton.onClick.AddListener(() => { PlayButtonSound(); Restart(); });
             _musicSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
             _sfxSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
 
@@ -90,6 +90,11 @@ namespace NumberMerge.UI
             IsPaused = false;
             Time.timeScale = 1f;
             SceneManager.LoadScene(GameplaySceneName);
+        }
+
+        private static void PlayButtonSound()
+        {
+            AudioManager.Instance?.Play(SfxId.ButtonPress);
         }
 
         public void OnMusicVolumeChanged(float value)

@@ -641,7 +641,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -30, y: -60}
+  m_AnchoredPosition: {x: -30, y: -100}
   m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 1, y: 1}
 --- !u!1 &244730595
@@ -1306,6 +1306,7 @@ MonoBehaviour:
   _sfxGroup: {fileID: -6790349889953632956, guid: 981a04fa8d29d5944a1d72cf9b3de0ca, type: 2}
   _uiGroup: {fileID: 1040045356208417527, guid: 981a04fa8d29d5944a1d72cf9b3de0ca, type: 2}
   _backgroundMusic: {fileID: 8300000, guid: a379294332595db4284bb990a90e219a, type: 3}
+  _sfxLibrary: {fileID: 11400000, guid: f895a454e37995f4eb67154c627a32b7, type: 2}
 --- !u!4 &526758636
 Transform:
   m_ObjectHideFlags: 0
@@ -3050,7 +3051,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 40, y: -60}
+  m_AnchoredPosition: {x: 40, y: -100}
   m_SizeDelta: {x: 656.3137, y: 240}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1439972004

@@ -1,3 +1,4 @@
+using NumberMerge.Audio;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -16,7 +17,11 @@ namespace NumberMerge.UI
 
         private void Awake()
         {
-            _restartButton.onClick.AddListener(Restart);
+            _restartButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.Play(SfxId.ButtonPress);
+                Restart();
+            });
             _overlay.SetActive(false);
         }
 
@@ -31,6 +36,7 @@ namespace NumberMerge.UI
             _scoreText.text = "Pontos: " + score;
             _recordText.text = "Recorde: " + record;
             _overlay.SetActive(true);
+            AudioManager.Instance?.Play(SfxId.GameOver);
         }
 
         private void Restart()

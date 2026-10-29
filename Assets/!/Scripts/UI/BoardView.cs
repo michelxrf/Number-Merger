@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using NumberMerge.Audio;
 using NumberMerge.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +34,7 @@ namespace NumberMerge.UI
         private float _gridWidth;
         private float _gridHeight;
         private bool _built;
+        private Image _insertPreview;
 
         public int ColumnCount
         {
@@ -149,6 +151,49 @@ namespace NumberMerge.UI
             return new Vector2(GetColumnCenterX(column), GetDropStartLocalY());
         }
 
+        // Shows a translucent ghost tile at the given cell, where a dragged piece would land.
+        public void ShowInsertionPreview(int column, int row)
+        {
+            EnsureBuilt();
+
+            if (_insertPreview == null)
+            {
+                var previewObject = new GameObject("InsertPreview", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                previewObject.layer = 5;
+                previewObject.transform.SetParent(transform, false);
+
+                var previewRect = previewObject.GetComponent<RectTransform>();
+                previewRect.anchorMin = new Vector2(0.5f, 0.5f);
+                previewRect.anchorMax = new Vector2(0.5f, 0.5f);
+                previewRect.pivot = new Vector2(0.5f, 0.5f);
+
+                _insertPreview = previewObject.GetComponent<Image>();
+                _insertPreview.raycastTarget = false;
+            }
+
+            if (_theme != null)
+            {
+                _insertPreview.sprite = _theme.InsertPreviewSprite;
+                _insertPreview.color = _theme.InsertPreviewColor;
+            }
+
+            var rect = _insertPreview.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(_cellSize, _cellSize);
+            rect.anchoredPosition = GetPosition(column, row);
+
+            // Keep the ghost above the slot backgrounds.
+            _insertPreview.transform.SetAsLastSibling();
+            _insertPreview.gameObject.SetActive(true);
+        }
+
+        public void HideInsertionPreview()
+        {
+            if (_insertPreview != null)
+            {
+                _insertPreview.gameObject.SetActive(false);
+            }
+        }
+
         public IEnumerator PlayMove(MoveResult move, Vector2? insertionStart = null)
         {
             if (move == null)
@@ -176,6 +221,7 @@ namespace NumberMerge.UI
                 yield return AnimateInsertion(inserted, GetPosition(move.Column, move.InsertedRow));
                 _tileGrid[move.InsertedRow, move.Column] = inserted;
                 inserted.name = BuildTileName(move.Column, move.InsertedRow, move.Value);
+                AudioManager.Instance?.Play(SfxId.TileInsert);
             }
 
             yield return AnimateGravity(move.AfterInsertion, move.Cascade.AfterInitialGravity);
@@ -183,6 +229,10 @@ namespace NumberMerge.UI
             for (int i = 0; i < move.Cascade.Steps.Count; i++)
             {
                 CascadeStep step = move.Cascade.Steps[i];
+
+                // Every merge in a chain plays its own sound, in sync with its animation. The index is the
+                // number of combinations before this one since the last insert, so the pitch rises per link.
+                AudioManager.Instance?.PlayChained(SfxId.Combination, i);
                 yield return AnimateMerge(step);
                 yield return AnimateGravity(step.AfterMerge, step.AfterGravity);
             }
