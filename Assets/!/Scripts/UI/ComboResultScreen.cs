@@ -16,6 +16,8 @@ namespace NumberMerge.UI
         [Tooltip("Scaled object that holds the image and the text.")]
         [SerializeField] private RectTransform _content;
         [SerializeField] private TMP_Text _countText;
+        [Tooltip("One-shot particle emitter (UIParticle child of the overlay). Bursts once each time the screen is shown.")]
+        [SerializeField] private ParticleSystem _burst;
 
         private Coroutine _sequence;
 
@@ -47,6 +49,13 @@ namespace NumberMerge.UI
             _overlay.SetActive(true);
             _canvasGroup.alpha = 0f;
             _content.localScale = Vector3.one * _config.StartScale;
+
+            // Must run after SetActive(true): ParticleSystem.Play does nothing on an inactive object.
+            if (_burst != null)
+            {
+                _burst.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                _burst.Play(true);
+            }
 
             AudioManager.Instance?.PlayComboSfx(_config.GetComboPitch(comboCount));
             _sequence = StartCoroutine(RunSequence());
