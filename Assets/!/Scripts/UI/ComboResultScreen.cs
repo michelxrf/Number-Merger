@@ -55,10 +55,12 @@ namespace NumberMerge.UI
         private IEnumerator RunSequence()
         {
             float fadeIn = _config.FadeInDuration;
-            LeanTween.alphaCanvas(_canvasGroup, 1f, fadeIn).setIgnoreTimeScale(true);
+            LeanTween.alphaCanvas(_canvasGroup, 1f, fadeIn)
+                .setIgnoreTimeScale(true)
+                .setEase(_config.FadeInEase);
             LeanTween.scale(_content.gameObject, Vector3.one * _config.EndScale, fadeIn)
                 .setIgnoreTimeScale(true)
-                .setEase(LeanTweenType.easeOutBack);
+                .setEase(_config.FadeInEase);
             yield return new WaitForSecondsRealtime(fadeIn);
 
             yield return new WaitForSecondsRealtime(_config.HoldDuration);

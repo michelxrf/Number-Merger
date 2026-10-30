@@ -20,6 +20,10 @@ namespace NumberMerge.UI
         [Tooltip("Scale at the end of the fade-in.")]
         [SerializeField, Min(0f)] private float _endScale = 1f;
 
+        [Header("Animation")]
+        [Tooltip("LeanTween ease used by the fade-in (alpha and scale).")]
+        [SerializeField] private LeanTweenType _fadeInEase = LeanTweenType.easeOutBack;
+
         [Header("Threshold")]
         [Tooltip("The screen is only shown when a move has at least this many combos.")]
         [SerializeField, Min(0)] private int _minCombosToShow = 2;
@@ -37,6 +41,7 @@ namespace NumberMerge.UI
         public float FadeOutDuration => _fadeOutDuration;
         public float StartScale => _startScale;
         public float EndScale => _endScale;
+        public LeanTweenType FadeInEase => _fadeInEase;
         public int MinCombosToShow => _minCombosToShow;
         public int PitchStartCount => _pitchStartCount;
         public float ChainPitchGain => _chainPitchGain;
