@@ -14,6 +14,7 @@ namespace NumberMerge.UI
         [SerializeField] private BoardView _boardView;
         [SerializeField] private PieceQueueView _queueView;
         [SerializeField] private TMP_Text _scoreText;
+        [SerializeField] private TMP_Text _recordText;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private GameOverScreen _gameOverScreen;
         [SerializeField] private ComboResultScreen _comboResultScreen;
@@ -78,6 +79,7 @@ namespace NumberMerge.UI
 
             Color color = _theme.TextColor;
             _scoreText.color = color;
+            _recordText.color = color;
             _statusText.color = color;
 
             if (_gameOverScreen != null)
@@ -337,7 +339,8 @@ namespace NumberMerge.UI
 
         private void RefreshUi()
         {
-            _scoreText.text = "Pontos: " + _controller.CurrentScore + "\nRecorde: " + _controller.Record;
+            _recordText.text = "Recorde: " + ScoreFormatter.Format(_controller.Record);
+            _scoreText.text = "Pontos: " + ScoreFormatter.Format(_controller.CurrentScore);
 
             if (_controller.IsGameOver)
             {

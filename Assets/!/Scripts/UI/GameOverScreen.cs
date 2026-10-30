@@ -33,8 +33,8 @@ namespace NumberMerge.UI
 
         public void Show(long score, long record)
         {
-            _scoreText.text = "Pontos: " + score;
-            _recordText.text = "Recorde: " + record;
+            _scoreText.text = "Pontos: " + ScoreFormatter.Format(score);
+            _recordText.text = "Recorde: " + ScoreFormatter.Format(record);
             _overlay.SetActive(true);
             AudioManager.Instance?.Play(SfxId.GameOver);
         }
