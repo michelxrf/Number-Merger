@@ -104,7 +104,7 @@ namespace NumberMerge.UI
             {
                 _pieces = CreatePieceGenerator();
                 _pieces.Restore(saved.CurrentPiece, saved.NextPiece);
-                _controller = new BoardController(restored, CreateCascadeResolver(), new ScoreService(record, score));
+                _controller = new BoardController(restored, CreateCascadeResolver(), new ScoreService(record, score), _settings.MergeCeilingValue);
 
                 if (_controller.IsGameOver)
                 {
@@ -121,7 +121,7 @@ namespace NumberMerge.UI
             }
 
             var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
-            _controller = new BoardController(board, CreateCascadeResolver(), new ScoreService(record));
+            _controller = new BoardController(board, CreateCascadeResolver(), new ScoreService(record), _settings.MergeCeilingValue);
             _pieces = CreatePieceGenerator();
             _pieces.Reset(board);
         }

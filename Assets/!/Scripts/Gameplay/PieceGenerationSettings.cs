@@ -127,7 +127,7 @@ namespace NumberMerge.Gameplay
         [Header("Spawn ceiling")]
         [Tooltip("Highest value that can spawn, in levels relative to the highest piece on the board: " +
                  "highest * 2^level. -1 = half the highest piece, 0 = the highest piece itself, +1 = twice it. " +
-                 "The result is capped at the max tile value (8192). Negative values can reduce the eligible " +
+                 "The result is capped at MergeCeilingValue. Negative values can reduce the eligible " +
                  "values to 2 only.")]
         [Range(-MaxSpawnCeilingLevelOffset, MaxSpawnCeilingLevelOffset)]
         public int SpawnCeilingLevelOffset = -1;
@@ -135,13 +135,14 @@ namespace NumberMerge.Gameplay
         public const int MaxSpawnCeilingLevelOffset = 10;
 
         [Tooltip("Hard cap on generated pieces: no piece above this value is spawned. 0 = no cap. " +
-                 "Must be a power of two from 2 to 8192. Merge results are not limited by this value.")]
-        [Range(0, MergeMath.MaxTileValue)] public int SpawnHardCeiling = 0;
+                 "Must be 0 or a power of two from 2 up to MergeCeilingValue. Merge results are not limited by this value.")]
+        [Min(0)] public int SpawnHardCeiling = 0;
 
         [Header("Merges and congestion")]
         [Tooltip("Tile value at which merging stops. A tile at this value can no longer be combined, and no merge " +
-                 "can produce a result above it. Must be a power of two from 2 to 8192.")]
-        public int MergeCeilingValue = MergeMath.MaxTileValue;
+                 "can produce a result above it. Also the highest value that can spawn. " +
+                 "Must be a power of two from 2 to 2^30.")]
+        public int MergeCeilingValue = 8192;
 
         [Tooltip("Merge value by participant count: element 0 = 2 pieces, 1 = 3, 2 = 4, 3 = 5. Must have 4 entries.")]
         public float[] MergeParticipantValues = { 0.6f, 0.8f, 0.9f, 1.0f };
@@ -230,20 +231,19 @@ namespace NumberMerge.Gameplay
                     MaxSpawnCeilingLevelOffset + "].");
             }
 
-            if (SpawnHardCeiling != 0 &&
-                (SpawnHardCeiling < SpawnTable.MinimumValue || SpawnHardCeiling > MergeMath.MaxTileValue ||
-                 (SpawnHardCeiling & (SpawnHardCeiling - 1)) != 0))
-            {
-                throw new InvalidOperationException(
-                    "SpawnHardCeiling must be 0 (no cap) or a power of two from 2 to " + MergeMath.MaxTileValue + ".");
-            }
-
-            if (MergeCeilingValue < SpawnTable.MinimumValue || MergeCeilingValue > MergeMath.MaxTileValue ||
-                (MergeCeilingValue & (MergeCeilingValue - 1)) != 0)
+            if (!MergeMath.IsValidCeiling(MergeCeilingValue))
             {
                 throw new InvalidOperationException(
                     "MergeCeilingValue must be a power of two from " + SpawnTable.MinimumValue +
-                    " to " + MergeMath.MaxTileValue + ".");
+                    " to " + MergeMath.MaxSupportedCeiling + ".");
+            }
+
+            if (SpawnHardCeiling != 0 &&
+                (!MergeMath.IsValidCeiling(SpawnHardCeiling) || SpawnHardCeiling > MergeCeilingValue))
+            {
+                throw new InvalidOperationException(
+                    "SpawnHardCeiling must be 0 (no cap) or a power of two from 2 up to MergeCeilingValue (" +
+                    MergeCeilingValue + ").");
             }
 
             if (ScoreMath.IsNotFinite(MergeHeightBias) || ScoreMath.IsNotFinite(MergeReliefFactor) ||

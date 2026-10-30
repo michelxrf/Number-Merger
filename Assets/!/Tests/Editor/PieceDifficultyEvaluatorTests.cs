@@ -28,7 +28,8 @@ namespace NumberMerge.Gameplay.Tests
                 new[] { 2, 4, 8 }, new[] { 16, 8, 4, 2 }, TestBoards.Column(2, 5),
                 new[] { 64, 32 }, TestBoards.NoColumn());
             IReadOnlyList<SpawnChance> eligible = SpawnTable.Build(
-                board, _settings.AbsentValueWeight, _settings.SpawnCeilingLevelOffset, _settings.SpawnHardCeiling);
+                board, _settings.AbsentValueWeight, _settings.SpawnCeilingLevelOffset, _settings.SpawnHardCeiling,
+                _settings.MergeCeilingValue);
 
             _evaluator.Evaluate(board, eligible, 0.5, _results, out _);
 
@@ -146,7 +147,8 @@ namespace NumberMerge.Gameplay.Tests
             string before = TestBoards.Snapshot(board);
 
             _evaluator.Evaluate(board, SpawnTable.Build(
-                board, _settings.AbsentValueWeight, _settings.SpawnCeilingLevelOffset, _settings.SpawnHardCeiling), 0.7, _results, out _);
+                board, _settings.AbsentValueWeight, _settings.SpawnCeilingLevelOffset, _settings.SpawnHardCeiling,
+                _settings.MergeCeilingValue), 0.7, _results, out _);
 
             Assert.AreEqual(before, TestBoards.Snapshot(board));
         }

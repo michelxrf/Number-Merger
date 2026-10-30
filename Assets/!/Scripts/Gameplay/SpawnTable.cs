@@ -18,8 +18,8 @@ namespace NumberMerge.Gameplay
     // Computes the eligible values and their base probability for the next piece.
     //
     // Rules:
-    // - Spawned values are at most the ceiling: highest * 2^ceilingLevelOffset (see CalculateCeiling).
-    //   The offset comes from PieceGenerationSettings.
+    // - Spawned values are at most the ceiling: highest * 2^ceilingLevelOffset, clamped to the merge ceiling
+    //   (see CalculateCeiling). The offset and merge ceiling come from PieceGenerationSettings.
     // - Eligible values are every power of two up to that ceiling, including values that are not on the board.
     // - A value's weight is the number of pieces of that value on the board. A power of two that is not on
     //   the board gets the caller-supplied absentValueWeight instead (0 keeps the old board-only behavior).
@@ -34,8 +34,8 @@ namespace NumberMerge.Gameplay
 
         // Highest spawnable value (inclusive) for a board, given as levels relative to its highest piece:
         // highest * 2^ceilingLevelOffset. Positive offsets go above the highest piece, negative offsets go below it.
-        // The result is clamped to MergeMath.MaxTileValue and is 0 on an empty board.
-        public static int CalculateCeiling(int highestValue, int ceilingLevelOffset)
+        // The result is clamped to mergeCeilingValue and is 0 on an empty board.
+        public static int CalculateCeiling(int highestValue, int ceilingLevelOffset, int mergeCeilingValue)
         {
             if (highestValue <= BoardModel.EmptyValue)
             {
@@ -45,7 +45,7 @@ namespace NumberMerge.Gameplay
             if (ceilingLevelOffset >= 0)
             {
                 long shifted = (long)highestValue << Math.Min(ceilingLevelOffset, 31);
-                return (int)Math.Min(shifted, MergeMath.MaxTileValue);
+                return (int)Math.Min(shifted, mergeCeilingValue);
             }
 
             return highestValue >> Math.Min(-ceilingLevelOffset, 31);
@@ -53,11 +53,13 @@ namespace NumberMerge.Gameplay
 
         // hardCeiling caps the spawned value regardless of the board: no piece above it is generated.
         // 0 means no cap. It only affects spawns; merge results are not limited by it.
+        // mergeCeilingValue (PieceGenerationSettings.MergeCeilingValue) is the highest value that can spawn.
         public static IReadOnlyList<SpawnChance> Build(
             BoardModel board,
             double absentValueWeight,
             int ceilingLevelOffset,
-            int hardCeiling)
+            int hardCeiling,
+            int mergeCeilingValue)
         {
             if (board == null)
             {
@@ -74,7 +76,7 @@ namespace NumberMerge.Gameplay
                 throw new ArgumentOutOfRangeException(nameof(hardCeiling));
             }
 
-            int ceiling = CalculateCeiling(board.HighestValue, ceilingLevelOffset);
+            int ceiling = CalculateCeiling(board.HighestValue, ceilingLevelOffset, mergeCeilingValue);
             if (hardCeiling > 0)
             {
                 ceiling = Math.Min(ceiling, hardCeiling);

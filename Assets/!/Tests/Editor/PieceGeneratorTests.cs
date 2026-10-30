@@ -10,6 +10,9 @@ namespace NumberMerge.Gameplay.Tests
     {
         private const double Tolerance = 1e-9;
 
+        // The default merge ceiling is the highest value that can spawn. Tests use it as the "max tile".
+        private static readonly int MaxTile = new PieceGenerationSettings().MergeCeilingValue;
+
         [Test]
         public void Reset_EmptyBoard_GivesMinimumValue()
         {
@@ -32,7 +35,7 @@ namespace NumberMerge.Gameplay.Tests
             for (int i = 0; i < 500; i++)
             {
                 Assert.IsTrue(eligible.Contains(generator.Current), "Ineligible value " + generator.Current);
-                Assert.LessOrEqual(generator.Current, MergeMath.MaxTileValue);
+                Assert.LessOrEqual(generator.Current, MaxTile);
                 generator.Advance(board);
             }
         }
@@ -41,13 +44,13 @@ namespace NumberMerge.Gameplay.Tests
         public void NearMaxTile_NeverSpawnsTheHighestPiece()
         {
             // Highest 8192, second highest 4096: values up to 4096 may spawn, the highest 8192 never does.
-            BoardModel board = TestBoards.Create(new[] { MergeMath.MaxTileValue }, new[] { 4096 });
+            BoardModel board = TestBoards.Create(new[] { MaxTile }, new[] { 4096 });
             var generator = new PieceGenerator(new SystemRandomSource(new Random(3)));
 
             generator.Reset(board);
             for (int i = 0; i < 300; i++)
             {
-                Assert.Less(generator.Current, MergeMath.MaxTileValue);
+                Assert.Less(generator.Current, MaxTile);
                 Assert.LessOrEqual(generator.Current, 4096);
                 Assert.IsTrue(generator.Current >= SpawnTable.MinimumValue);
                 generator.Advance(board);
@@ -58,7 +61,7 @@ namespace NumberMerge.Gameplay.Tests
         public void AbsentValueWeightZero_KeepsBoardOnlyBehavior()
         {
             // With absentValueWeight 0 only values on the board (plus 2) can spawn. Here that is 2 and 4096.
-            BoardModel board = TestBoards.Create(new[] { MergeMath.MaxTileValue }, new[] { 4096 });
+            BoardModel board = TestBoards.Create(new[] { MaxTile }, new[] { 4096 });
             var settings = new PieceGenerationSettings { AbsentValueWeight = 0f };
             var generator = new PieceGenerator(new SystemRandomSource(new Random(3)), settings);
             var seen = new HashSet<int>();
@@ -114,13 +117,13 @@ namespace NumberMerge.Gameplay.Tests
         [Test]
         public void MaxTileOnBoard_DoesNotLetItSpawn()
         {
-            BoardModel board = TestBoards.Create(new[] { MergeMath.MaxTileValue }, new[] { 16 }, new[] { 8 });
+            BoardModel board = TestBoards.Create(new[] { MaxTile }, new[] { 16 }, new[] { 8 });
             var generator = new PieceGenerator(new SystemRandomSource(new Random(4)));
 
             generator.Reset(board);
             for (int i = 0; i < 300; i++)
             {
-                Assert.Less(generator.Current, MergeMath.MaxTileValue);
+                Assert.Less(generator.Current, MaxTile);
                 Assert.IsTrue(EligibleValues(board).Contains(generator.Current), "Ineligible value " + generator.Current);
                 generator.Advance(board);
             }
@@ -273,7 +276,8 @@ namespace NumberMerge.Gameplay.Tests
                 new CascadeResolver(new MergeResolver(
                     new SystemRandomSource(new Random(seed + 1000)),
                     new PieceGenerationSettings().MergeCeilingValue)),
-                new ScoreService());
+                new ScoreService(),
+                new PieceGenerationSettings().MergeCeilingValue);
             var generator = new PieceGenerator(new SystemRandomSource(new Random(seed)));
             var policy = new Random(seed + 2000);
 
@@ -300,7 +304,8 @@ namespace NumberMerge.Gameplay.Tests
             var values = new HashSet<int>();
             var defaults = new PieceGenerationSettings();
             foreach (SpawnChance chance in SpawnTable.Build(
-                board, defaults.AbsentValueWeight, defaults.SpawnCeilingLevelOffset, defaults.SpawnHardCeiling))
+                board, defaults.AbsentValueWeight, defaults.SpawnCeilingLevelOffset, defaults.SpawnHardCeiling,
+                defaults.MergeCeilingValue))
             {
                 values.Add(chance.Value);
             }

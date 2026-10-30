@@ -7,6 +7,8 @@ namespace NumberMerge.Gameplay.Tests
 {
     public sealed class SpawnTableTests
     {
+        private static readonly int DefaultMergeCeiling = new PieceGenerationSettings().MergeCeilingValue;
+
         [TestCase(16, -1, 8)]
         [TestCase(16, 0, 16)]
         [TestCase(16, 1, 32)]
@@ -18,7 +20,24 @@ namespace NumberMerge.Gameplay.Tests
         [TestCase(0, -3, 0)]
         public void CalculateCeiling_ShiftsHighestByLevels(int highest, int offset, int expected)
         {
-            Assert.AreEqual(expected, SpawnTable.CalculateCeiling(highest, offset));
+            Assert.AreEqual(expected, SpawnTable.CalculateCeiling(highest, offset, DefaultMergeCeiling));
+        }
+
+        [Test]
+        public void CalculateCeiling_ClampsToMergeCeiling()
+        {
+            Assert.AreEqual(64, SpawnTable.CalculateCeiling(16, 4, 64));
+        }
+
+        [Test]
+        public void MergeCeilingAboveOldLimit_AllowsSpawnsAboveIt()
+        {
+            // Highest 8192 with level +1 would be 16384; the merge ceiling of 16384 now allows it.
+            BoardModel board = TestBoards.Create(new[] { 8192 });
+
+            HashSet<int> eligible = Eligible(board, 1, 0, 16384);
+
+            Assert.IsTrue(eligible.Contains(16384));
         }
 
         [Test]
@@ -110,6 +129,14 @@ namespace NumberMerge.Gameplay.Tests
         }
 
         [Test]
+        public void HardCeiling_AboveMergeCeiling_IsRejectedBySettings()
+        {
+            var settings = new PieceGenerationSettings { MergeCeilingValue = 64, SpawnHardCeiling = 128 };
+
+            Assert.Throws<InvalidOperationException>(() => settings.Validate());
+        }
+
+        [Test]
         public void HardCeiling_DoesNotLimitMergeResults()
         {
             // The hard cap only applies to spawns. Playing a 4 next to a 4 still merges into 8,
@@ -124,7 +151,8 @@ namespace NumberMerge.Gameplay.Tests
                 new CascadeResolver(new MergeResolver(
                     new SystemRandomSource(new Random(1)),
                     new PieceGenerationSettings().MergeCeilingValue)),
-                new NumberMerge.Managers.ScoreService());
+                new NumberMerge.Managers.ScoreService(),
+                DefaultMergeCeiling);
 
             Assert.IsTrue(controller.TryPlay(1, 4));
             Assert.AreEqual(8, board.GetValue(1, 0));
@@ -149,10 +177,15 @@ namespace NumberMerge.Gameplay.Tests
             Assert.Throws<InvalidOperationException>(() => settings.Validate());
         }
 
-        private static HashSet<int> Eligible(BoardModel board, int offset, int hardCeiling = 0)
+        private static HashSet<int> Eligible(BoardModel board, int offset, int hardCeiling = 0, int mergeCeiling = 0)
         {
             var values = new HashSet<int>();
-            foreach (SpawnChance chance in SpawnTable.Build(board, 0.5, offset, hardCeiling))
+            if (mergeCeiling == 0)
+            {
+                mergeCeiling = DefaultMergeCeiling;
+            }
+
+            foreach (SpawnChance chance in SpawnTable.Build(board, 0.5, offset, hardCeiling, mergeCeiling))
             {
                 values.Add(chance.Value);
             }

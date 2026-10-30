@@ -86,7 +86,8 @@ namespace NumberMerge.Gameplay
             }
 
             IReadOnlyList<SpawnChance> eligible = SpawnTable.Build(
-                board, _settings.AbsentValueWeight, _settings.SpawnCeilingLevelOffset, _settings.SpawnHardCeiling);
+                board, _settings.AbsentValueWeight, _settings.SpawnCeilingLevelOffset, _settings.SpawnHardCeiling,
+                _settings.MergeCeilingValue);
             BoardPressure pressure = _pressureCalculator.Calculate(board);
             _evaluator.Evaluate(board, eligible, pressure.Normalized, _scores, out ScoreWeights weights);
 

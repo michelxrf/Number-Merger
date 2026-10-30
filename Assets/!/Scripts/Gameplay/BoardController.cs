@@ -8,11 +8,19 @@ namespace NumberMerge.Gameplay
         private readonly CascadeResolver _cascadeResolver;
         private readonly ScoreService _scoreService;
 
-        public BoardController(BoardModel board, CascadeResolver cascadeResolver, ScoreService scoreService)
+        // mergeCeilingValue is PieceGenerationSettings.MergeCeilingValue; it must match the merge resolver's ceiling.
+        public BoardController(BoardModel board, CascadeResolver cascadeResolver, ScoreService scoreService, int mergeCeilingValue)
         {
             Board = board ?? throw new ArgumentNullException(nameof(board));
             _cascadeResolver = cascadeResolver ?? throw new ArgumentNullException(nameof(cascadeResolver));
             _scoreService = scoreService ?? throw new ArgumentNullException(nameof(scoreService));
+
+            if (!MergeMath.IsValidCeiling(mergeCeilingValue))
+            {
+                throw new ArgumentOutOfRangeException(nameof(mergeCeilingValue));
+            }
+
+            MergeCeilingValue = mergeCeilingValue;
 
             // A restored board may already be in game over state.
             IsGameOver = HasOverflowedColumn();
@@ -20,9 +28,11 @@ namespace NumberMerge.Gameplay
 
         public BoardModel Board { get; }
 
-        // Upper bound for the points a single move can add: every cell merging at the maximum value.
+        public int MergeCeilingValue { get; }
+
+        // Upper bound for the points a single move can add: every cell merging at the merge ceiling.
         public long MaxPossibleCascadePoints =>
-            (long)Board.TotalRowCount * Board.ColumnCount * MergeMath.MaxTileValue;
+            (long)Board.TotalRowCount * Board.ColumnCount * MergeCeilingValue;
 
         public long CurrentScore => _scoreService.CurrentScore;
         public long Record => _scoreService.Record;
