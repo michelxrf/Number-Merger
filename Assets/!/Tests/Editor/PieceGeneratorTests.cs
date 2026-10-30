@@ -270,7 +270,9 @@ namespace NumberMerge.Gameplay.Tests
             var trace = new List<string>();
             var controller = new BoardController(
                 new BoardModel(),
-                new CascadeResolver(new MergeResolver(new SystemRandomSource(new Random(seed + 1000)))),
+                new CascadeResolver(new MergeResolver(
+                    new SystemRandomSource(new Random(seed + 1000)),
+                    new PieceGenerationSettings().MergeCeilingValue)),
                 new ScoreService());
             var generator = new PieceGenerator(new SystemRandomSource(new Random(seed)));
             var policy = new Random(seed + 2000);

@@ -8,11 +8,6 @@ namespace NumberMerge.Gameplay
         private readonly CascadeResolver _cascadeResolver;
         private readonly ScoreService _scoreService;
 
-        public BoardController()
-            : this(new BoardModel(), new CascadeResolver(), new ScoreService())
-        {
-        }
-
         public BoardController(BoardModel board, CascadeResolver cascadeResolver, ScoreService scoreService)
         {
             Board = board ?? throw new ArgumentNullException(nameof(board));

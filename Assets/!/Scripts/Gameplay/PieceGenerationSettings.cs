@@ -139,6 +139,10 @@ namespace NumberMerge.Gameplay
         [Range(0, MergeMath.MaxTileValue)] public int SpawnHardCeiling = 0;
 
         [Header("Merges and congestion")]
+        [Tooltip("Tile value at which merging stops. A tile at this value can no longer be combined, and no merge " +
+                 "can produce a result above it. Must be a power of two from 2 to 8192.")]
+        public int MergeCeilingValue = MergeMath.MaxTileValue;
+
         [Tooltip("Merge value by participant count: element 0 = 2 pieces, 1 = 3, 2 = 4, 3 = 5. Must have 4 entries.")]
         public float[] MergeParticipantValues = { 0.6f, 0.8f, 0.9f, 1.0f };
 
@@ -232,6 +236,14 @@ namespace NumberMerge.Gameplay
             {
                 throw new InvalidOperationException(
                     "SpawnHardCeiling must be 0 (no cap) or a power of two from 2 to " + MergeMath.MaxTileValue + ".");
+            }
+
+            if (MergeCeilingValue < SpawnTable.MinimumValue || MergeCeilingValue > MergeMath.MaxTileValue ||
+                (MergeCeilingValue & (MergeCeilingValue - 1)) != 0)
+            {
+                throw new InvalidOperationException(
+                    "MergeCeilingValue must be a power of two from " + SpawnTable.MinimumValue +
+                    " to " + MergeMath.MaxTileValue + ".");
             }
 
             if (ScoreMath.IsNotFinite(MergeHeightBias) || ScoreMath.IsNotFinite(MergeReliefFactor) ||

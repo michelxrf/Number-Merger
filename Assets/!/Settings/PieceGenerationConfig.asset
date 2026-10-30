@@ -37,6 +37,7 @@ MonoBehaviour:
     AbsentValueWeight: 2
     SpawnCeilingLevelOffset: -1
     SpawnHardCeiling: 0
+    MergeCeilingValue: 16384
     MergeParticipantValues:
     - 0.6
     - 0.8

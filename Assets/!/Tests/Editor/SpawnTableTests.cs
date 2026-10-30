@@ -121,7 +121,9 @@ namespace NumberMerge.Gameplay.Tests
             BoardModel board = TestBoards.Create(TestBoards.NoColumn(), new[] { 4 });
             var controller = new BoardController(
                 board,
-                new CascadeResolver(new MergeResolver(new SystemRandomSource(new Random(1)))),
+                new CascadeResolver(new MergeResolver(
+                    new SystemRandomSource(new Random(1)),
+                    new PieceGenerationSettings().MergeCeilingValue)),
                 new NumberMerge.Managers.ScoreService());
 
             Assert.IsTrue(controller.TryPlay(1, 4));

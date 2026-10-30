@@ -7,8 +7,9 @@ A vertical number-merging puzzle prototype built with Unity. Drop `2` and `4` ti
 - The board is 5 columns wide and 7 visible rows tall.
 - Each turn you press and drag across the board to pick a column, then release to drop the current tile into the lowest free cell of that column.
 - Tiles are `2` (90%) or `4` (10%). The next tile is always shown in the corner.
-- Orthogonally adjacent tiles with the same value merge (2 to 5 participants). The merged result is `value × (participants − 1) × 2`, capped at `8192`.
+- Orthogonally adjacent tiles with the same value merge (2 to 5 participants). The merged result is `value × 2^(participants − 1)`, capped at `8192`.
 - Merges can chain: after each merge, gravity is applied and the board is checked again.
+- Combos: every merge after the first one in the same move is a combo. Three or more merges in one move show a `NNx` counter in the center of the screen, and each merge in the chain plays its sound a little higher than the previous one.
 - Score is the sum of every merge result in a move. The record is kept between sessions.
 - The game ends when a column holds more than 7 tiles.
 
@@ -83,11 +84,12 @@ Working:
 - Tile placement, merging, cascades and game over
 - Scoring and persisted record
 - Save and resume of the board in progress
+- Combo counter, combo result screen and chain sound pitch
 - Restart from the game over screen and the debug overlay
 
 Not yet done:
 
 - Main menu and menu-to-gameplay transition
-- Audio integration
+- Game over sound
 - More in-game challenges
 - Google Ads

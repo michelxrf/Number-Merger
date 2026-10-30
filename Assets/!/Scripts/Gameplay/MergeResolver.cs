@@ -6,15 +6,20 @@ namespace NumberMerge.Gameplay
     public sealed class MergeResolver
     {
         private readonly IRandomSource _random;
+        private readonly int _ceilingValue;
 
-        public MergeResolver()
-            : this(new SystemRandomSource())
-        {
-        }
-
-        public MergeResolver(IRandomSource random)
+        // ceilingValue: tiles at or above this value cannot be combined, and merge results cannot exceed it.
+        // It comes from PieceGenerationSettings.MergeCeilingValue.
+        public MergeResolver(IRandomSource random, int ceilingValue)
         {
             _random = random ?? throw new ArgumentNullException(nameof(random));
+
+            if (ceilingValue <= BoardModel.EmptyValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ceilingValue));
+            }
+
+            _ceilingValue = ceilingValue;
         }
 
         public bool TryResolveOnce(BoardModel board, out MergeOutcome outcome)
@@ -50,7 +55,7 @@ namespace NumberMerge.Gameplay
             return false;
         }
 
-        private static List<MergeOutcome> FindCandidates(BoardModel board, out int highestPriority)
+        private List<MergeOutcome> FindCandidates(BoardModel board, out int highestPriority)
         {
             var candidates = new List<MergeOutcome>();
             highestPriority = 0;
@@ -76,7 +81,7 @@ namespace NumberMerge.Gameplay
                         highestPriority = neighbors.Count;
                     }
 
-                    if (!MergeMath.TryCalculateResult(value, neighbors.Count + 1, out int resultValue))
+                    if (!MergeMath.TryCalculateResult(value, neighbors.Count + 1, _ceilingValue, out int resultValue))
                     {
                         continue;
                     }

@@ -186,7 +186,7 @@ namespace NumberMerge.Gameplay
             }
 
             int participants = neighbors + 1;
-            if (!MergeMath.TryCalculateResult(value, participants, out _))
+            if (!MergeMath.TryCalculateResult(value, participants, _settings.MergeCeilingValue, out _))
             {
                 return 0d;
             }

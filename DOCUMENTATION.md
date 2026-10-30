@@ -3,7 +3,7 @@
 > Última atualização: 2026-10-29  
 > Projeto: `D:\Projects\Number Merger`  
 > Unity: `6000.3.10f1`  
-> Último commit incluído: `9d541ef bug fix`
+> Último commit incluído: `565d214 combos`
 
 ## Sumário
 
@@ -33,6 +33,7 @@ O estado atual é um **protótipo jogável**, com:
 - Tabuleiro de 5 colunas e 7 linhas visíveis, mais uma linha de overflow.
 - Geração de peças adaptativa à pressão do tabuleiro, com pesos e temperatura configuráveis em um único arquivo.
 - Combinação por vizinhança ortogonal, com cascatas e gravidade.
+- Combos: contagem de combinações encadeadas em uma jogada, com tela de resultado (`NNx`) e sons com pitch crescente (ver seção 6, “Combos e cadeias”).
 - Pontuação e recorde, ambos persistidos com `PlayerPrefs`.
 - Retomada da partida em andamento ao reabrir o jogo.
 - Tela de game over com reinício.
@@ -54,6 +55,8 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 - Fila de duas peças sempre visível: atual (centro) e próxima (canto).
 - Prévia da peça atual acompanhando a coluna escolhida durante o arraste.
 - Pontuação somando o valor resultante de cada combinação.
+- Contador de combos por jogada, com tela de resultado “NNx” no centro da tela (a partir de 3 combinações na jogada).
+- Som de cada combinação em cadeia com pitch crescente, e som de combo com pitch crescente na tela de resultado.
 - Recorde persistido em `PlayerPrefs`.
 - Salvamento da partida após cada jogada válida; retomada ao abrir o jogo.
 - Game over quando uma coluna fica com 8 peças; o save da partida é apagado.
@@ -66,7 +69,7 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 ### Pendente ou não implementado
 
 - Cena `MainMenu` funcional e transição menu → gameplay. (O objeto `ContinueButton` existe na cena `Gameplay`, mas nenhum script do projeto o referencia.)
-- Efeitos sonoros: `PlaySfx` e `PlayUi` existem, mas nada os chama ainda.
+- Efeito sonoro de game over (`SfxId.GameOver`) ainda não é tocado pelo jogo. Inserção, combinação em cadeia, combo e início de partida já tocam.
 - Tipo de peça "bad tile": o campo `BadTileSprite` existe no tema, mas a mecânica não foi implementada.
 - Teste automatizado do caminho real de toque no Editor.
 - Testes automatizados para os demais sistemas de lógica. A cobertura atual é apenas a geração de peças (ver seção 13).
@@ -111,7 +114,7 @@ Assets/
       MainMenu.unity        Placeholder de menu
     Scripts/
       Audio/
-        AudioManager.cs
+        AudioManager.cs, SfxLibrary.cs (ScriptableObject)
       Gameplay/
         BoardController.cs, BoardModel.cs, BoardPosition.cs, BoardSnapshot.cs,
         CascadeResolver.cs, CascadeResult.cs, CascadeStep.cs,
@@ -121,24 +124,27 @@ Assets/
         PieceDifficultyEvaluator.cs, CandidateSelection.cs, PieceGenerationDecision.cs,
         PieceGenerationConfig.cs (ScriptableObject)
       Managers/
-        ScoreService.cs
+        ScoreService.cs, ComboCounter.cs
       Save/
         BoardState.cs, SaveSystem.cs
       UI/
-        BoardView.cs, BoardViewConfig.cs (ScriptableObject), DebugScreen.cs,
-        FullscreenBackground.cs, GameOverScreen.cs, GameplayScreen.cs, PieceQueueView.cs,
-        TileTheme.cs, TileView.cs
+        BoardView.cs, BoardViewConfig.cs (ScriptableObject), ComboResultConfig.cs (ScriptableObject),
+        ComboResultScreen.cs, DebugScreen.cs, FullscreenBackground.cs, GameOverScreen.cs,
+        GameplayScreen.cs, PieceQueueView.cs, TileTheme.cs, TileView.cs
     Data/
       BoardViewConfig.asset  Layout e durações de animação do tabuleiro (ScriptableObject)
     Settings/
       PieceGenerationConfig.asset  Balanceamento da geração de peças (ScriptableObject)
+      ComboResultConfig.asset      Tempos, limiar, pitch da tela e do som de combo (ScriptableObject)
+      SfxLibrary.asset             Clipes de efeitos sonoros por momento (ScriptableObject)
     Sprites/                Tiles, slot, fundos, partículas
     Themes/
       DefaultTileTheme.asset  Tema padrão do tabuleiro e das peças
     Tests/
-      Editor/                 Testes EditMode da geração de peças (ver seção 13)
+      Editor/                 Testes EditMode (ver seção 13)
         TestBoards.cs, BoardPressureCalculatorTests.cs, PieceDifficultyEvaluatorTests.cs,
-        CandidateSelectionTests.cs, PieceGeneratorTests.cs
+        CandidateSelectionTests.cs, PieceGeneratorTests.cs,
+        ComboCounterTests.cs, ComboResultConfigTests.cs
   LeanTween/                Biblioteca de animações (inclui pasta Testing com exemplos próprios)
 ProjectSettings/
   ProjectSettings.asset
@@ -172,16 +178,19 @@ BoardController ─────────────► BoardView ──► T
       └── ScoreService
 
 GameplayScreen ──► SaveSystem ──► PlayerPrefs (BoardState em JSON, recorde)
+GameplayScreen ──► ComboResultScreen ──► ComboResultConfig (tempos, limiar, pitch)
 GameOverScreen / DebugScreen ──► SceneManager (recarrega Gameplay)
-AudioManager (singleton, DontDestroyOnLoad) ──► AudioMixer
+BoardView ──► AudioManager.PlayChained (uma vez por combinação)
+ComboResultScreen ──► AudioManager.PlayComboSfx
+AudioManager (singleton, DontDestroyOnLoad) ──► AudioMixer, SfxLibrary
 ```
 
 ### Camadas
 
-- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `RandomSource`, e a geração de peças: `PieceGenerator`, `PieceGenerationSettings`, `SpawnTable`, `BoardPressureCalculator`, `PieceDifficultyEvaluator`, `CandidateSelection`, `PieceGenerationDecision`.
+- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `ComboCounter`, `RandomSource`, e a geração de peças: `PieceGenerator`, `PieceGenerationSettings`, `SpawnTable`, `BoardPressureCalculator`, `PieceDifficultyEvaluator`, `CandidateSelection`, `PieceGenerationDecision`.
 - **Persistência:** `SaveSystem`, `BoardState`.
-- **Apresentação:** `GameplayScreen`, `BoardView`, `BoardViewConfig`, `PieceQueueView`, `TileView`, `TileTheme`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
-- **Áudio:** `AudioManager`.
+- **Apresentação:** `GameplayScreen`, `BoardView`, `BoardViewConfig`, `PieceQueueView`, `TileView`, `TileTheme`, `ComboResultScreen`, `ComboResultConfig`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
+- **Áudio:** `AudioManager`, `SfxLibrary`.
 - **Dados de resultado:** `BoardSnapshot`, `MoveResult`, `CascadeResult`, `CascadeStep`, `MergeOutcome`, `BoardPosition`.
 
 A lógica pura não depende de `MonoBehaviour` e recebe dependências por construtor (`IRandomSource` para aleatoriedade). `GameplayScreen` é o ponto de composição da cena.
@@ -301,6 +310,43 @@ Exemplos:
 - `ScoreService` usa `long` e verifica overflow antes de somar (`CanAdd`/`TryAdd`). Antes de cada jogada, `BoardController` confirma que a pontuação suporta o pior caso possível (`MaxPossibleCascadePoints`: 8 linhas × 5 colunas × 8192).
 - O recorde é atualizado sempre que a pontuação atual o supera e é salvo junto com a partida (ver seção 8).
 
+### Combos e cadeias
+
+Uma **cadeia** é a sequência de combinações que uma mesma jogada produz na cascata. Cada combinação da cascata é um elo da cadeia. A cadeia é o que a jogada causou; o **combo** é a contagem de elos além do primeiro.
+
+- A primeira combinação de uma jogada **não** é combo.
+- Cada combinação seguinte soma 1 ao contador de combos.
+- O contador é zerado depois que a jogada termina e a tela de resultado é disparada. Cada jogada começa do zero.
+- Jogada sem combinação, ou com uma só: 0 combos.
+
+Exemplos:
+
+| Combinações na jogada | Combos (contador) | Texto da tela |
+|---|---:|---|
+| 1 | 0 | não aparece |
+| 2 | 1 | não aparece (limiar padrão é 2 combos) |
+| 3 | 2 | “3x” |
+| 4 | 3 | “4x” |
+
+O texto da tela é o contador + 1, ou seja, o número de combinações da jogada. A tela só aparece se o contador for igual ou maior que `MinCombosToShow` (padrão `2`), ou seja, a partir de 3 combinações na mesma jogada.
+
+**Tela de resultado (`ComboResultScreen`).** Aparece no centro da tela logo após a animação da jogada. Sequência, em tempo não escalado (funciona com o jogo pausado):
+
+1. Fade-in com escala de `StartScale` (0,5) até `EndScale` (1), `FadeInDuration` (0,5 s), com easeOutBack.
+2. Mantém-se visível por `HoldDuration` (1 s).
+3. Fade-out por `FadeOutDuration` (0,5 s).
+
+Se outra jogada mostrar a tela antes do fim da anterior, a sequência atual é cancelada e a nova começa. A tela não bloqueia o input: a jogada seguinte pode começar enquanto ela ainda está visível.
+
+**Som de cada elo (cadeia).** Cada combinação da cascata toca `SfxId.Combination` com pitch `1 + índice × ChainPitchStep`, em que o índice começa em 0 em cada jogada. Com o padrão `ChainPitchStep = 0,1`, os elos tocam em 1x, 1,1x, 1,2x, … Não há limite de pitch nesse caminho. Cada elo usa uma fonte de áudio própria, então um pitch alto não altera sons que ainda estão tocando.
+
+**Som de combo (tela de resultado).** Toca uma vez quando a tela aparece, com pitch definido por `ComboResultConfig.GetComboPitch(contador)`:
+
+- Abaixo de `PitchStartCount` (padrão 3): 1x.
+- A partir de `PitchStartCount`: cada combo soma `ChainPitchGain` (padrão 0,1), limitado a `MaxPitch` (padrão 2).
+
+Com os padrões, o contador 2 (3 combinações) toca em 1x, o contador 3 em 1,1x, o contador 4 em 1,2x, e assim por diante até 2x.
+
 ### Game over
 
 - Ocorre quando, após uma jogada, alguma coluna tem 8 peças.
@@ -321,7 +367,7 @@ Exemplos:
    - `PieceQueueView.Advance` promove a segunda peça e cria uma nova.
    - Se houve game over, o save é apagado imediatamente.
    - `BoardView.PlayMove` anima inserção, gravidade e combinações.
-9. Ao terminar a animação, `SaveProgress` salva o recorde e o estado da partida (ou apaga o save em game over), o input volta ao jogador e a interface é atualizada.
+9. Ao terminar a animação, `SaveProgress` salva o recorde e o estado da partida (ou apaga o save em game over). Em seguida, se a jogada teve combos suficientes, `ComboResultScreen.Show` mostra a tela de combo. O contador de combos é zerado, o input volta ao jogador e a interface é atualizada. A tela de combo não atrasa o input.
 10. Em caso de falha (coluna cheia):
     - A fila volta ao centro.
     - O status mostra “Coluna cheia”.
@@ -476,7 +522,9 @@ Arquivos: `BoardController.cs`, `ScoreService.cs`
 - Define `IsGameOver` pelo overflow de qualquer coluna.
 - Produz `MoveResult`.
 
-Ao construir o controlador com um tabuleiro restaurado, `IsGameOver` já é calculado a partir do estado.
+Após resolver a cascata, `BoardController` alimenta `Combos` (`ComboCounter`) com o número de combinações da cascata (`AddCascade`). A tela de combo e o `GameplayScreen` leem `Combos.Count` e depois chamam `Combos.Reset()`. Detalhes na seção 9.15.
+
+Ao construir o controlador com um tabuleiro restaurado, `IsGameOver` já é calculado a partir do estado. O contador de combos não é salvo: uma partida restaurada começa sem combo pendente.
 
 `ScoreService` mantém `CurrentScore` e `Record`, ambos `long`. Ao restaurar, o recorde nunca fica abaixo da pontuação restaurada.
 
@@ -595,7 +643,8 @@ Arquivo: `Assets/!/Scripts/Audio/AudioManager.cs`
 - Cria três `AudioSource`, roteados para os grupos Music, Sfx e Ui de um `AudioMixer`.
 - Toca a música de fundo (`_backgroundMusic`, em loop) ao iniciar. A cena `Gameplay` já referencia o mixer e o clipe.
 - Métodos disponíveis: `PlayMusic`, `StopMusic`, `PlaySfx`, `PlayUi`, `SetVolume`, `GetVolume`. Volume é linear (0 a 1), convertido para decibéis. Os parâmetros do mixer são `MusicVolume`, `SfxVolume` e `UiVolume`.
-- `PlaySfx` e `PlayUi` ainda não são chamados pelo jogo.
+- `Play(SfxId)` escolhe um clipe aleatório de `SfxLibrary` e envia para o canal de UI (`ButtonPress`) ou de SFX (os demais). `PlaySfx` e `PlayUi` são os métodos que ele usa internamente.
+- `PlayChained(SfxId, índice)` e `PlayComboSfx(pitch)` tocam os sons de cadeia e de combo com pitch definido por chamada (ver seção 9.15).
 
 ### 9.14 `FullscreenBackground`
 
@@ -604,6 +653,52 @@ Arquivo: `Assets/!/Scripts/UI/FullscreenBackground.cs`
 - Em cada frame, posiciona o `SpriteRenderer` na frente da câmera e escala-o para cobrir toda a área visível (“cover”), mantendo a proporção.
 - Funciona com câmera ortográfica ou em perspectiva. Usa a câmera atribuída ou `Camera.main`.
 - Roda também no Editor (`[ExecuteAlways]`).
+
+### 9.15 Combos e cadeias
+
+Arquivos: `ComboCounter.cs`, `ComboResultScreen.cs`, `ComboResultConfig.cs`, `SfxLibrary.cs`, `AudioManager.cs`, `BoardView.cs`, `GameplayScreen.cs`
+
+**`ComboCounter`** (`Managers`, puro, sem `MonoBehaviour`):
+
+- `Count`: combos acumulados na jogada atual.
+- `AddCascade(mergeCount)`: soma `max(0, mergeCount − 1)`. Lança exceção para valor negativo.
+- `Reset()`: zera o contador.
+- Vive em `BoardController.Combos`. Não é salvo em `BoardState`.
+
+**`GameplayScreen`:** em `AnimateMove`, depois de `SaveProgress`, chama `_comboResultScreen.Show(_controller.Combos.Count)` e então `_controller.Combos.Reset()`. O campo `_comboResultScreen` é opcional; sem ele, a tela não aparece.
+
+**`ComboResultScreen`** (`UI`):
+
+- Campos no Inspector: `Config`, `Overlay` (objeto raiz, desativado no Awake), `CanvasGroup`, `Content` (`RectTransform` com a escala) e `CountText` (`TMP_Text`).
+- `Show(count)`: ignora se `count < MinCombosToShow`. Do contrário, define o texto como `count + 1 + "x"`, ativa o overlay, toca o som de combo e inicia a sequência.
+- `SetTextColor(color)`: chamado por `GameplayScreen` com a cor do tema, junto com o texto de status e a tela de game over.
+- A sequência usa `WaitForSecondsRealtime` e `setIgnoreTimeScale(true)` no LeanTween.
+
+**`ComboResultConfig`** (ScriptableObject, menu `Number Merge/Combo Result Config`, asset `Assets/!/Settings/ComboResultConfig.asset`):
+
+| Parâmetro | Padrão | Efeito |
+|---|---:|---|
+| `FadeInDuration` | 0,5 s | Duração do fade-in e da escala de entrada. |
+| `HoldDuration` | 1 s | Tempo totalmente visível. |
+| `FadeOutDuration` | 0,5 s | Duração do fade-out. |
+| `StartScale` / `EndScale` | 0,5 / 1 | Escala no início e no fim do fade-in. |
+| `MinCombosToShow` | 2 | Contador mínimo para mostrar a tela (3 combinações na jogada). |
+| `PitchStartCount` | 3 | Primeiro contador que eleva o pitch. Mínimo 1. |
+| `ChainPitchGain` | 0,1 | Pitch somado por combo a partir de `PitchStartCount`. |
+| `MaxPitch` | 2 | Limite do pitch do som de combo. |
+
+`GetComboPitch(contador) = min(1 + max(0, contador − PitchStartCount + 1) × ChainPitchGain, MaxPitch)`.
+
+Se o `ComboResultConfig` não estiver atribuído, `Show` não faz nada.
+
+**Sons de cadeia e de combo** (`AudioManager`, `SfxLibrary`):
+
+- `SfxLibrary` (ScriptableObject, asset `Assets/!/Settings/SfxLibrary.asset`) tem os campos `_combination` (clipes dos elos de cadeia), `_comboSfx` (clipes da tela de combo) e `_chainPitchStep` (0,1). Cada momento aceita vários clipes; um é sorteado a cada toque.
+- `BoardView.PlayMove` chama `PlayChained(SfxId.Combination, i)` para cada `CascadeStep` `i` da cascata, em sincronia com a animação de combinação. Por isso, o primeiro elo de uma jogada toca em 1x, e os seguintes sobem `ChainPitchStep` cada um.
+- `PlayComboSfx(pitch)` é chamado por `ComboResultScreen.Show` com o pitch de `GetComboPitch`. Sem clipe atribuído em `ComboSfx`, não toca nada.
+- Os sons de cadeia e de combo usam um pool de `AudioSource` (`GetIdleChainSource`), reaproveitando a primeira fonte que não está tocando.
+
+Observação: o som de inserção (`SfxId.TileInsert`) toca quando a peça pousa, antes da cascata. Os elos de cadeia começam depois dele.
 
 ## 10. Cena e layout
 
@@ -655,6 +750,7 @@ O caminho de input foi implementado com a API padrão do Input System, mas a sim
 | Combinação | Coroutine com interpolação smoothstep, duração `MergeDuration` (0,12s) |
 | Pop do resultado | Coroutine com interpolação, duração `PopDuration` (0,12s) |
 | Gravidade | Coroutine com interpolação smoothstep, duração `GravityDuration` (0,12s) |
+| Tela de combo | LeanTween de alpha e escala (`easeOutBack` na escala), com tempos de `ComboResultConfig` (0,5 s + 1 s + 0,5 s) |
 
 As durações marcadas acima vêm do `BoardViewConfig`.
 
@@ -672,6 +768,9 @@ As animações de combinação e gravidade continuam em coroutines com interpola
    - Inserção na coluna escolhida.
    - Fila avançando após uma jogada válida.
    - Combinações, cascatas e pontuação.
+   - Combos: jogada com 2 combinações sem tela; jogada com 3 ou mais mostra “3x”, “4x”, … no centro, sem travar a próxima jogada.
+   - Sons de cadeia: cada combinação de uma mesma jogada sobe o pitch (1x, 1,1x, 1,2x, …).
+   - Som de combo: o pitch sobe a partir do 3º combo na jogada (padrão), até 2x.
    - Coluna cheia mantendo a peça atual.
    - Recorde mantido após fechar e reabrir o jogo.
    - Partida retomada após fechar e reabrir o jogo.
@@ -683,6 +782,8 @@ Testes automatizados:
 1. Abrir Window > General > Test Runner.
 2. Selecionar a aba EditMode e executar todos os testes, ou filtrar pela assembly `Assembly-CSharp-Editor`.
 3. Resultado esperado: 72 testes aprovados (`BoardPressureCalculatorTests`, `PieceDifficultyEvaluatorTests`, `CandidateSelectionTests`, `PieceGeneratorTests`, `PieceGenerationConfigTests`).
+
+Testes de combo: `ComboCounterTests` (contagem de combos por cascata e reset) e `ComboResultConfigTests` (limiar, pitch e limite do pitch). Estão na mesma assembly e aparecem no Test Runner junto com os demais.
 
 Os testes exigem a janela do Editor em foco. Sem foco, a execução fica bloqueada.
 
@@ -714,7 +815,7 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 
 5. Criar a cena de menu e a transição para o gameplay, ou remover o `MainMenu` e o `ContinueButton` se não forem usados.
 6. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `ScoreService` e `BoardState`. A geração de peças já tem testes.
-7. Ligar os efeitos sonoros (`PlaySfx`) ao drop, à combinação e ao game over.
+7. Ligar o efeito sonoro de game over (`SfxId.GameOver`). Drop, combinação em cadeia e combo já estão ligados.
 
 ### Prioridade baixa
 
@@ -742,6 +843,12 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 | `Assets/!/Scripts/Gameplay/PieceGenerationConfig.cs` | ScriptableObject com os parâmetros de balanceamento |
 | `Assets/!/Settings/PieceGenerationConfig.asset` | Asset de balanceamento usado pelo `GameplayScreen` |
 | `Assets/!/Scripts/Gameplay/SpawnTable.cs` | Elegibilidade e probabilidades base |
+| `Assets/!/Scripts/Managers/ComboCounter.cs` | Contador de combos da jogada atual |
+| `Assets/!/Scripts/UI/ComboResultScreen.cs` | Tela “NNx” no centro após a jogada |
+| `Assets/!/Scripts/UI/ComboResultConfig.cs` | ScriptableObject com tempos, limiar e pitch do combo |
+| `Assets/!/Settings/ComboResultConfig.asset` | Asset de configuração usado pelo `ComboResultScreen` |
+| `Assets/!/Scripts/Audio/SfxLibrary.cs` | Clipes dos efeitos sonoros, incluindo cadeia e combo |
+| `Assets/!/Settings/SfxLibrary.asset` | Asset de efeitos sonoros |
 | `Assets/!/Tests/Editor/` | Testes EditMode da geração de peças |
 | `Assets/!/Scripts/Gameplay/RandomSource.cs` | Fonte de aleatoriedade substituível |
 | `Assets/!/Scripts/Gameplay/BoardSnapshot.cs` | Cópia do tabuleiro para animação |
@@ -772,6 +879,8 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 ## 16. Mudanças desde a versão anterior
 
 Esta seção resume o que mudou em relação ao documento de 2026-10-23:
+
+- **Combos e cadeias (2026-10-29):** `ComboCounter` conta as combinações além da primeira em cada jogada. A tela `ComboResultScreen` mostra “NNx” no centro quando a jogada tem 3 ou mais combinações (`MinCombosToShow` = 2 combos). Cada combinação da cascata toca `Combination` com pitch crescente por elo (`ChainPitchStep`), e a tela toca `ComboSfx` com pitch crescente a partir do 3º combo (`ComboResultConfig`). Detalhes nas seções 6 (“Combos e cadeias”) e 9.15.
 
 - **Configuração do tabuleiro em ScriptableObject (2026-10-29):** `ColumnCount`, `VisibleRowCount`, `Spacing`, `CellSizeOverride` e as quatro durações de animação saíram do `BoardView` e foram para o `BoardViewConfig` (`Assets/!/Data/BoardViewConfig.asset`). O `BoardView` carrega esses valores em `Start` (também no primeiro acesso, antes de `Start`). O asset foi criado com os valores que a cena usava, incluindo `Spacing` = 3. Detalhes na seção 9.7.
 

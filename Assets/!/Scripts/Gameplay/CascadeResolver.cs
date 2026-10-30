@@ -11,11 +11,6 @@ namespace NumberMerge.Gameplay
         private readonly MergeResolver _mergeResolver;
         private readonly int _maxSteps;
 
-        public CascadeResolver()
-            : this(new MergeResolver())
-        {
-        }
-
         public CascadeResolver(MergeResolver mergeResolver)
             : this(mergeResolver, DefaultMaxSteps)
         {

@@ -17,13 +17,14 @@ namespace NumberMerge.UI
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private GameOverScreen _gameOverScreen;
         [SerializeField] private ComboResultScreen _comboResultScreen;
-        [Tooltip("Balance asset for piece generation. If empty, the default settings are used.")]
+        [Tooltip("Balance asset for piece generation and merge rules (including the merge ceiling). Must be assigned.")]
         [SerializeField] private PieceGenerationConfig _pieceGenerationConfig;
         [Tooltip("Theme whose Background Sprites are picked from at random on load.")]
         [SerializeField] private TileTheme _theme;
         [Tooltip("SpriteRenderer of the BackgroundSprite object that displays the chosen background.")]
         [SerializeField] private SpriteRenderer _backgroundRenderer;
 
+        private PieceGenerationSettings _settings;
         private BoardController _controller;
         private PieceGenerator _pieces;
         private RectTransform _boardRect;
@@ -34,6 +35,8 @@ namespace NumberMerge.UI
         private void Awake()
         {
             _boardRect = _boardView.GetComponent<RectTransform>();
+
+            _settings = ResolveSettings();
 
             ApplyRandomBackground();
             ApplyTextColor();
@@ -101,7 +104,7 @@ namespace NumberMerge.UI
             {
                 _pieces = CreatePieceGenerator();
                 _pieces.Restore(saved.CurrentPiece, saved.NextPiece);
-                _controller = new BoardController(restored, new CascadeResolver(), new ScoreService(record, score));
+                _controller = new BoardController(restored, CreateCascadeResolver(), new ScoreService(record, score));
 
                 if (_controller.IsGameOver)
                 {
@@ -118,19 +121,32 @@ namespace NumberMerge.UI
             }
 
             var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
-            _controller = new BoardController(board, new CascadeResolver(), new ScoreService(record));
+            _controller = new BoardController(board, CreateCascadeResolver(), new ScoreService(record));
             _pieces = CreatePieceGenerator();
             _pieces.Reset(board);
         }
 
-        private PieceGenerator CreatePieceGenerator()
+        // Piece generation and merge rules (including the merge ceiling) all come from the same balance asset.
+        private PieceGenerationSettings ResolveSettings()
         {
             if (_pieceGenerationConfig == null)
             {
-                return new PieceGenerator();
+                Debug.LogError("[GameplayScreen] No PieceGenerationConfig assigned; using the default settings.", this);
+                return new PieceGenerationSettings();
             }
 
-            return new PieceGenerator(new SystemRandomSource(), _pieceGenerationConfig.Settings);
+            return _pieceGenerationConfig.Settings;
+        }
+
+        private PieceGenerator CreatePieceGenerator()
+        {
+            return new PieceGenerator(new SystemRandomSource(), _settings);
+        }
+
+        private CascadeResolver CreateCascadeResolver()
+        {
+            var mergeResolver = new MergeResolver(new SystemRandomSource(), _settings.MergeCeilingValue);
+            return new CascadeResolver(mergeResolver);
         }
 
         private void Update()
