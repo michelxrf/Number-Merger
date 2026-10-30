@@ -14,6 +14,8 @@ namespace NumberMerge.UI
         [Tooltip("Theme whose Text Color is applied to every text in the pause overlay.")]
         [SerializeField] private TileTheme _theme;
         [SerializeField] private GameObject _overlay;
+        [Tooltip("Panel inside the overlay. It is scaled during the fade; the overlay itself is not.")]
+        [SerializeField] private RectTransform _panel;
         [SerializeField] private Button _pauseButton;
         [SerializeField] private Button _closeButton;
         [SerializeField] private Button _restartButton;
@@ -67,7 +69,7 @@ namespace NumberMerge.UI
             IsPaused = true;
             Time.timeScale = 0f;
             RefreshSliders();
-            _overlay.SetActive(true);
+            OverlayFade.FadeIn(_overlay, _panel);
         }
 
         public void Resume()
@@ -79,7 +81,7 @@ namespace NumberMerge.UI
 
             IsPaused = false;
             Time.timeScale = 1f;
-            _overlay.SetActive(false);
+            OverlayFade.FadeOut(_overlay, _panel);
         }
 
         public void Restart()
@@ -89,7 +91,10 @@ namespace NumberMerge.UI
 
             IsPaused = false;
             Time.timeScale = 1f;
-            SceneManager.LoadScene(GameplaySceneName);
+
+            // Prevent a second click from queueing another scene load during the fade.
+            _restartButton.interactable = false;
+            OverlayFade.FadeOut(_overlay, _panel, () => SceneManager.LoadScene(GameplaySceneName));
         }
 
         private static void PlayButtonSound()

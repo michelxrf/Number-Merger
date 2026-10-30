@@ -11,6 +11,8 @@ namespace NumberMerge.UI
         private const string GameplaySceneName = "Gameplay";
 
         [SerializeField] private GameObject _overlay;
+        [Tooltip("Panel inside the overlay. It is scaled during the fade; the overlay itself is not.")]
+        [SerializeField] private RectTransform _panel;
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _recordText;
         [SerializeField] private Button _restartButton;
@@ -35,7 +37,7 @@ namespace NumberMerge.UI
         {
             _scoreText.text = "Pontos: " + ScoreFormatter.Format(score);
             _recordText.text = "Recorde: " + ScoreFormatter.Format(record);
-            _overlay.SetActive(true);
+            OverlayFade.FadeIn(_overlay, _panel);
             AudioManager.Instance?.Play(SfxId.GameOver);
         }
 

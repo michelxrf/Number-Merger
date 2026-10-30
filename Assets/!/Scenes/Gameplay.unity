@@ -1942,6 +1942,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.UI.GameOverScreen
   _overlay: {fileID: 1414361514}
+  _panel: {fileID: 1870987234}
   _scoreText: {fileID: 714489386}
   _recordText: {fileID: 727805591}
   _restartButton: {fileID: 1785557883}
@@ -3922,6 +3923,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.UI.PauseMenu
   _theme: {fileID: 11400000, guid: 0b6517f5f79f56e48b219707192dde0f, type: 2}
   _overlay: {fileID: 1951261981}
+  _panel: {fileID: 794590344}
   _pauseButton: {fileID: 205637413}
   _closeButton: {fileID: 244730597}
   _restartButton: {fileID: 285109032}
