@@ -23,3 +23,5 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 11fa0a866a11ac048b8bdf878e20af94, type: 3}
   _gameOver:
   - {fileID: 8300000, guid: 2dd1885823d6a5d4084bd237df755eec, type: 3}
+  _comboSfx:
+  - {fileID: 8300000, guid: 083ad0029993f5646af28be90ffe4e95, type: 3}

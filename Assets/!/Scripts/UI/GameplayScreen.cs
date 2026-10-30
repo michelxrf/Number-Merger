@@ -16,6 +16,7 @@ namespace NumberMerge.UI
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private GameOverScreen _gameOverScreen;
+        [SerializeField] private ComboResultScreen _comboResultScreen;
         [Tooltip("Balance asset for piece generation. If empty, the default settings are used.")]
         [SerializeField] private PieceGenerationConfig _pieceGenerationConfig;
         [Tooltip("Theme whose Background Sprites are picked from at random on load.")]
@@ -79,6 +80,11 @@ namespace NumberMerge.UI
             if (_gameOverScreen != null)
             {
                 _gameOverScreen.SetTextColor(color);
+            }
+
+            if (_comboResultScreen != null)
+            {
+                _comboResultScreen.SetTextColor(color);
             }
         }
 
@@ -282,6 +288,14 @@ namespace NumberMerge.UI
 
             // Save right before the player regains control, so the saved state is the one they can act on.
             SaveProgress();
+
+            // Combo result is shown from the count of this move, then the counter is cleared for the next move.
+            if (_comboResultScreen != null)
+            {
+                _comboResultScreen.Show(_controller.Combos.Count);
+            }
+
+            _controller.Combos.Reset();
             _isAnimating = false;
             RefreshUi();
         }

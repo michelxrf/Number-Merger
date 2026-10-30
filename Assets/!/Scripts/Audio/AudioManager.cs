@@ -127,6 +127,22 @@ namespace NumberMerge.Audio
             source.Play();
         }
 
+        // Plays the combo sound once at the given pitch (1 = normal). Uses a pooled source so the pitch
+        // is set per play without affecting other sounds.
+        public void PlayComboSfx(float pitch)
+        {
+            AudioClip clip = _sfxLibrary != null ? _sfxLibrary.GetRandomClip(SfxId.ComboSfx) : null;
+            if (clip == null)
+            {
+                return;
+            }
+
+            AudioSource source = GetIdleChainSource();
+            source.pitch = pitch;
+            source.clip = clip;
+            source.Play();
+        }
+
         private AudioSource GetIdleChainSource()
         {
             foreach (AudioSource source in _chainSources)

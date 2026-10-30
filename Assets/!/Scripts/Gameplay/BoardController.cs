@@ -33,6 +33,9 @@ namespace NumberMerge.Gameplay
         public long Record => _scoreService.Record;
         public bool IsGameOver { get; private set; }
 
+        // Combos since the owner last called Reset (the result phase resets it before the next move).
+        public ComboCounter Combos { get; } = new ComboCounter();
+
         public bool TryPlay(int column, int value)
         {
             return TryPlay(column, value, out MoveResult _);
@@ -82,6 +85,7 @@ namespace NumberMerge.Gameplay
                     ", points: " + points);
             }
 
+            Combos.AddCascade(cascade.MergeCount);
             IsGameOver = HasOverflowedColumn();
             move = new MoveResult(before, afterInsertion, column, value, insertedRow, cascade);
             return true;
