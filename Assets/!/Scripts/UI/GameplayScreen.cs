@@ -15,6 +15,10 @@ namespace NumberMerge.UI
         [SerializeField] private PieceQueueView _queueView;
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _recordText;
+        [Tooltip("Pulse played on the score text every time the score goes up.")]
+        [SerializeField] private ScorePulse _scorePulse;
+        [Tooltip("Pulse played on the record text every time the record goes up.")]
+        [SerializeField] private ScorePulse _recordPulse;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private GameOverScreen _gameOverScreen;
         [SerializeField] private ComboResultScreen _comboResultScreen;
@@ -32,6 +36,9 @@ namespace NumberMerge.UI
         private bool _isAnimating;
         private bool _isPreviewing;
         private int _previewColumn = -1;
+        private bool _hasShownScore;
+        private long _shownScore;
+        private long _shownRecord;
 
         private void Awake()
         {
@@ -339,8 +346,29 @@ namespace NumberMerge.UI
 
         private void RefreshUi()
         {
-            _recordText.text = "Recorde: " + ScoreFormatter.Format(_controller.Record);
-            _scoreText.text = "Pontos: " + ScoreFormatter.Format(_controller.CurrentScore);
+            long score = _controller.CurrentScore;
+            long record = _controller.Record;
+
+            _recordText.text = "Recorde: " + ScoreFormatter.Format(record);
+            _scoreText.text = "Pontos: " + ScoreFormatter.Format(score);
+
+            // The first refresh (scene load) shows the values without pulsing; later increases pulse their own text.
+            if (_hasShownScore)
+            {
+                if (score > _shownScore)
+                {
+                    _scorePulse.Pulse();
+                }
+
+                if (record > _shownRecord)
+                {
+                    _recordPulse.Pulse();
+                }
+            }
+
+            _hasShownScore = true;
+            _shownScore = score;
+            _shownRecord = record;
 
             if (_controller.IsGameOver)
             {

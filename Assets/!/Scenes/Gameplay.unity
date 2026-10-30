@@ -1564,6 +1564,7 @@ GameObject:
   - component: {fileID: 429692980}
   - component: {fileID: 429692979}
   - component: {fileID: 429692978}
+  - component: {fileID: 429692981}
   m_Layer: 5
   m_Name: RecordText
   m_TagString: Untagged
@@ -1690,6 +1691,20 @@ RectTransform:
   m_AnchoredPosition: {x: 30, y: -20}
   m_SizeDelta: {x: -60, y: -20}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &429692981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429692977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63bcf6006c77f0d42982671d7935fdf0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.UI.ScorePulse
+  _peakScale: 1.05
+  _duration: 0.2
 --- !u!1 &526758634
 GameObject:
   m_ObjectHideFlags: 0
@@ -3080,6 +3095,8 @@ MonoBehaviour:
   _queueView: {fileID: 1112032522}
   _scoreText: {fileID: 1439333949}
   _recordText: {fileID: 429692978}
+  _scorePulse: {fileID: 1439333950}
+  _recordPulse: {fileID: 429692981}
   _statusText: {fileID: 353859811}
   _gameOverScreen: {fileID: 624519304}
   _comboResultScreen: {fileID: 40178172}
@@ -3561,6 +3578,7 @@ GameObject:
   - component: {fileID: 1439333948}
   - component: {fileID: 1439333947}
   - component: {fileID: 1439333949}
+  - component: {fileID: 1439333950}
   m_Layer: 5
   m_Name: ScoreText
   m_TagString: Untagged
@@ -3687,6 +3705,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1439333950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1439333945}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63bcf6006c77f0d42982671d7935fdf0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.UI.ScorePulse
+  _peakScale: 1.05
+  _duration: 0.2
 --- !u!1 &1439972002
 GameObject:
   m_ObjectHideFlags: 0
