@@ -21,6 +21,16 @@ namespace NumberMerge.UI
         [SerializeField, Min(0f)] private float _mergeDuration = 0.12f;
         [SerializeField, Min(0f)] private float _popDuration = 0.12f;
         [SerializeField, Min(0f)] private float _gravityDuration = 0.12f;
+        [Tooltip("Fade-out of destroyed tiles (revive).")]
+        [SerializeField, Min(0f)] private float _destroyDuration = 0.5f;
+        [Tooltip("Time for destroyed tiles to turn to the blink color before they fade out. The petal burst starts with it.")]
+        [SerializeField, Min(0f)] private float _blinkDuration = 0.2f;
+        [Tooltip("Color destroyed tiles turn to. It stays on them while they fade out.")]
+        [SerializeField] private Color _blinkColor = new Color(1f, 0.25f, 0.25f, 1f);
+        [Tooltip("Scale a destroyed tile punches up to during the blink (1 = no punch). It settles back to 1.")]
+        [SerializeField, Min(1f)] private float _punchScale = 1.2f;
+        [Tooltip("Size of the petal emitter as a fraction of the tile size. Lower = petals start closer to the tile center.")]
+        [SerializeField, Range(0.1f, 1f)] private float _petalEmitterScale = 0.2f;
 
         public int ColumnCount => _columnCount;
         public int VisibleRowCount => _visibleRowCount;
@@ -30,5 +40,10 @@ namespace NumberMerge.UI
         public float MergeDuration => _mergeDuration;
         public float PopDuration => _popDuration;
         public float GravityDuration => _gravityDuration;
+        public float DestroyDuration => _destroyDuration;
+        public float BlinkDuration => _blinkDuration;
+        public Color BlinkColor => _blinkColor;
+        public float PunchScale => _punchScale;
+        public float PetalEmitterScale => _petalEmitterScale;
     }
 }

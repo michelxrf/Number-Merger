@@ -1946,6 +1946,7 @@ MonoBehaviour:
   _scoreText: {fileID: 714489386}
   _recordText: {fileID: 727805591}
   _restartButton: {fileID: 1785557883}
+  _continueButton: {fileID: 105061675}
 --- !u!224 &624519305
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2903,6 +2904,7 @@ MonoBehaviour:
   _tilePrefab: {fileID: 6200132439395706353, guid: b3acbb5d710378b459ff9a64aa810e4d, type: 3}
   _theme: {fileID: 11400000, guid: 0b6517f5f79f56e48b219707192dde0f, type: 2}
   _config: {fileID: 11400000, guid: ce2534a0a9ca78e47ac9e3fd0487cbf0, type: 2}
+  _petalBurstPrefab: {fileID: 9210549677896975346, guid: 9b8fb0dfadcfd2e45abfd8c15a93b248, type: 3}
 --- !u!114 &1111056271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3104,6 +3106,7 @@ MonoBehaviour:
   _pieceGenerationConfig: {fileID: 11400000, guid: f7372e3328b5af048b0f6bd8ff118c9e, type: 2}
   _theme: {fileID: 11400000, guid: 0b6517f5f79f56e48b219707192dde0f, type: 2}
   _backgroundRenderer: {fileID: 1012690923}
+  _reviveConfig: {fileID: 11400000, guid: e0dcc9013e3a4154696a5c305972178e, type: 2}
 --- !u!114 &1191976503
 MonoBehaviour:
   m_ObjectHideFlags: 0

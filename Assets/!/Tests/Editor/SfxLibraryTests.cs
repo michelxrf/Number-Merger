@@ -61,6 +61,7 @@ namespace NumberMerge.Audio.Tests
             {
                 SfxId.ButtonPress => "_buttonPress",
                 SfxId.TileInsert => "_tileInsert",
+                SfxId.TileDestroy => "_tileDestroy",
                 SfxId.Combination => "_combination",
                 SfxId.GameStart => "_gameStart",
                 SfxId.GameOver => "_gameOver",

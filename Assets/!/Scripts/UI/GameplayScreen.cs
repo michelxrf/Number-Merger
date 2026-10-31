@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using NumberMerge.Audio;
 using NumberMerge.Gameplay;
 using NumberMerge.Managers;
@@ -40,6 +42,15 @@ namespace NumberMerge.UI
         private long _shownScore;
         private long _shownRecord;
 
+        [Tooltip("Revive balance: tiles removed per revive and the delay before the removal starts.")]
+        [SerializeField] private ReviveConfig _reviveConfig;
+
+        // Revives the player can still use. Saved by SaveSystem; only changed after a revive has been saved.
+        private int _revives;
+
+        // Set by the debug key so the next revive does not spend one.
+        private bool _debugFreeRevive;
+
         private void Awake()
         {
             _boardRect = _boardView.GetComponent<RectTransform>();
@@ -48,7 +59,13 @@ namespace NumberMerge.UI
 
             ApplyRandomBackground();
             ApplyTextColor();
+            _revives = SaveSystem.LoadRevives();
             LoadOrStartGame();
+
+            if (_gameOverScreen != null)
+            {
+                _gameOverScreen.ContinueConfirmed += OnContinueConfirmed;
+            }
 
             _boardView.Initialize(_controller.Board);
             InitializeQueue();
@@ -160,6 +177,13 @@ namespace NumberMerge.UI
 
         private void Update()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (Keyboard.current != null && Keyboard.current.f11Key.wasPressedThisFrame)
+            {
+                DebugRevive();
+            }
+#endif
+
             if (DebugScreen.IsOpen || PauseMenu.IsPaused || _controller == null || _controller.IsGameOver || _isAnimating)
             {
                 return;
@@ -208,12 +232,6 @@ namespace NumberMerge.UI
             // The board is already resolved here, so the new piece uses the post-move state.
             _pieces.Advance(_controller.Board);
             _queueView.Advance(_pieces.Next);
-
-            // Game over is final: remove the saved board as soon as it happens, not after the animation.
-            if (_controller.IsGameOver)
-            {
-                SaveSystem.DeleteBoardState();
-            }
 
             _isAnimating = true;
             _statusText.text = "Resolvendo...";
@@ -325,15 +343,121 @@ namespace NumberMerge.UI
             RefreshUi();
         }
 
+        // Removes the given tiles at once and plays the solve that follows. Input is ignored until it ends.
+        // onComplete runs after the board has been saved. Returns false, without changing anything, when the
+        // tiles cannot be removed right now.
+        public bool DestroyTiles(IReadOnlyList<BoardPosition> positions, Action onComplete = null)
+        {
+            if (_controller == null || _isAnimating || _isPreviewing)
+            {
+                return false;
+            }
+
+            if (!_controller.TryDestroyTiles(positions, out DestructionResult destruction))
+            {
+                return false;
+            }
+
+            _isAnimating = true;
+            _statusText.gameObject.SetActive(true);
+            _statusText.text = "Resolvendo...";
+            StartCoroutine(AnimateDestruction(destruction, onComplete));
+            return true;
+        }
+
+        private IEnumerator AnimateDestruction(DestructionResult destruction, Action onComplete)
+        {
+            yield return _boardView.PlayDestruction(destruction);
+
+            // Save the playable board before anything else, so onComplete (which spends a revive) runs after it.
+            SaveProgress();
+
+            // Merges from the solve count as normal merges: they show the combo result like a move does.
+            if (_comboResultScreen != null)
+            {
+                _comboResultScreen.Show(_controller.Combos.Count);
+            }
+
+            _controller.Combos.Reset();
+            _isAnimating = false;
+            RefreshUi();
+            onComplete?.Invoke();
+        }
+
+        // The Continue button on the game over screen. The screen has already faded out when this runs.
+        private void OnContinueConfirmed()
+        {
+            bool freeRevive = _debugFreeRevive;
+            _debugFreeRevive = false;
+
+            if (!freeRevive && _revives <= 0)
+            {
+                return;
+            }
+
+            StartCoroutine(StartRevive(spendRevive: !freeRevive));
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Debug key (F11): runs the revive from the game over screen without spending a revive.
+        private void DebugRevive()
+        {
+            if (_controller == null || !_controller.IsGameOver || _isAnimating || _gameOverScreen == null)
+            {
+                Debug.Log("[Debug] F11 revive ignored: the game is not in game over.", this);
+                return;
+            }
+
+            Debug.Log("[Debug] F11 revive (no revive spent).", this);
+            _debugFreeRevive = true;
+            _gameOverScreen.TriggerContinue();
+        }
+#endif
+
+        private float ReviveDelay => _reviveConfig != null ? _reviveConfig.DestructionDelay : 0.5f;
+
+        // Waits after the game over fade-out, then removes the tiles and solves the board.
+        private IEnumerator StartRevive(bool spendRevive)
+        {
+            yield return new WaitForSecondsRealtime(ReviveDelay);
+
+            if ((spendRevive && _revives <= 0) || _controller == null || !_controller.IsGameOver)
+            {
+                yield break;
+            }
+
+            List<BoardPosition> tiles = _reviveConfig != null
+                ? ReviveSelection.Choose(_controller.Board, new SystemRandomSource(), _reviveConfig.MinDestroyedTiles, _reviveConfig.MaxDestroyedFraction)
+                : ReviveSelection.Choose(_controller.Board, new SystemRandomSource());
+
+            bool started = DestroyTiles(tiles, () =>
+            {
+                if (!spendRevive)
+                {
+                    return;
+                }
+
+                // The revive is spent only now: the board has been resolved and saved.
+                _revives = Math.Max(0, _revives - 1);
+                SaveSystem.SaveRevives(_revives);
+            });
+
+            if (!started)
+            {
+                // Nothing was removed, so the player is still in game over: show the screen again.
+                _gameOverScreen.Show(_controller.CurrentScore, _controller.Record, _revives);
+            }
+        }
+
         // Called right before the player regains control. Record is always saved.
-        // The board is saved in its playable state, or deleted on game over.
+        // The board is saved in its playable state. A game over board is never saved, so the save stays at
+        // the state before the move that caused the game over.
         private void SaveProgress()
         {
             SaveSystem.SaveRecord(_controller.Record);
 
             if (_controller.IsGameOver)
             {
-                SaveSystem.DeleteBoardState();
                 return;
             }
 
@@ -373,7 +497,7 @@ namespace NumberMerge.UI
             if (_controller.IsGameOver)
             {
                 _statusText.gameObject.SetActive(false);
-                _gameOverScreen.Show(_controller.CurrentScore, _controller.Record);
+                _gameOverScreen.Show(_controller.CurrentScore, _controller.Record, _revives);
                 return;
             }
 

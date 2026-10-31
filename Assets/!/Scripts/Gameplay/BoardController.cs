@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NumberMerge.Managers;
 
 namespace NumberMerge.Gameplay
@@ -76,6 +77,76 @@ namespace NumberMerge.Gameplay
 
             BoardSnapshot afterInsertion = BoardSnapshot.Capture(Board);
             CascadeResult cascade = _cascadeResolver.Resolve(Board);
+            CommitCascade(cascade);
+            move = new MoveResult(before, afterInsertion, column, value, insertedRow, cascade);
+            return true;
+        }
+
+        // Removes the given tiles at once, then resolves the board (gravity and merges).
+        // The removal itself scores nothing; merges caused by the resolve score like any other merge.
+        // Unlike TryPlay, this is allowed on a game over board: it is how a game over is recovered from.
+        // Returns false, without changing the board, when a position is invalid, empty, or repeated.
+        public bool TryDestroyTiles(IReadOnlyList<BoardPosition> positions, out DestructionResult destruction)
+        {
+            destruction = null;
+
+            if (positions == null || positions.Count == 0)
+            {
+                return false;
+            }
+
+            var seen = new HashSet<BoardPosition>();
+            for (int i = 0; i < positions.Count; i++)
+            {
+                BoardPosition position = positions[i];
+
+                if (!Board.IsValidColumn(position.Column) ||
+                    !Board.IsValidRow(position.Row) ||
+                    Board.IsEmpty(position.Column, position.Row) ||
+                    !seen.Add(position))
+                {
+                    return false;
+                }
+            }
+
+            if (!_scoreService.CanAdd(MaxPossibleCascadePoints))
+            {
+                return false;
+            }
+
+            BoardSnapshot before = BoardSnapshot.Capture(Board);
+
+            for (int i = 0; i < positions.Count; i++)
+            {
+                Board.TryRemove(positions[i].Column, positions[i].Row, out _);
+            }
+
+            BoardSnapshot afterRemoval = BoardSnapshot.Capture(Board);
+            CascadeResult cascade = _cascadeResolver.Resolve(Board);
+            CommitCascade(cascade);
+
+            destruction = new DestructionResult(before, afterRemoval, positions, cascade);
+            return true;
+        }
+
+        // Columns whose stack reaches the overflow row. A game over is caused by one of these.
+        public List<int> GetOverflowedColumns()
+        {
+            var columns = new List<int>();
+
+            for (int column = 0; column < Board.ColumnCount; column++)
+            {
+                if (Board.HasOverflow(column))
+                {
+                    columns.Add(column);
+                }
+            }
+
+            return columns;
+        }
+
+        private void CommitCascade(CascadeResult cascade)
+        {
             long points = 0;
 
             for (int i = 0; i < cascade.Merges.Count; i++)
@@ -92,21 +163,11 @@ namespace NumberMerge.Gameplay
 
             Combos.AddCascade(cascade.MergeCount);
             IsGameOver = HasOverflowedColumn();
-            move = new MoveResult(before, afterInsertion, column, value, insertedRow, cascade);
-            return true;
         }
 
         private bool HasOverflowedColumn()
         {
-            for (int column = 0; column < Board.ColumnCount; column++)
-            {
-                if (Board.HasOverflow(column))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return GetOverflowedColumns().Count > 0;
         }
     }
 }

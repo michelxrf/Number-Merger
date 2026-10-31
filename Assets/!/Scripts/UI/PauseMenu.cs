@@ -86,8 +86,9 @@ namespace NumberMerge.UI
 
         public void Restart()
         {
-            // Wipe the board in progress; the record is kept.
+            // Wipe the board in progress and reset the revives; the record is kept.
             SaveSystem.DeleteBoardState();
+            SaveSystem.SaveRevives(SaveSystem.DefaultRevives);
 
             IsPaused = false;
             Time.timeScale = 1f;

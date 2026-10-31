@@ -3,14 +3,18 @@ using UnityEngine;
 
 namespace NumberMerge.Save
 {
-    // Persists the player's record and the board in progress.
+    // Persists the player's record, the revives left, and the board in progress.
     //
     // Uses PlayerPrefs, which works on Windows, Android and WebGL (File IO is not available on WebGL).
-    // The record and the board use separate keys, so they are independent of each other.
+    // Each value uses its own key, so they are independent of each other.
     public static class SaveSystem
     {
         private const string RecordKey = "NumberMerge.Record";
         private const string BoardKey = "NumberMerge.Board";
+        private const string RevivesKey = "NumberMerge.Revives";
+
+        // Revives a player starts a new game with (and has on a fresh install).
+        public const int DefaultRevives = 1;
 
         public static long LoadRecord()
         {
@@ -32,6 +36,23 @@ namespace NumberMerge.Save
             }
 
             PlayerPrefs.SetString(RecordKey, record.ToString(CultureInfo.InvariantCulture));
+            PlayerPrefs.Save();
+        }
+
+        // Revives left. A missing key (fresh install) returns DefaultRevives.
+        public static int LoadRevives()
+        {
+            if (!PlayerPrefs.HasKey(RevivesKey))
+            {
+                return DefaultRevives;
+            }
+
+            return Mathf.Max(0, PlayerPrefs.GetInt(RevivesKey, DefaultRevives));
+        }
+
+        public static void SaveRevives(int revives)
+        {
+            PlayerPrefs.SetInt(RevivesKey, Mathf.Max(0, revives));
             PlayerPrefs.Save();
         }
 
@@ -84,6 +105,7 @@ namespace NumberMerge.Save
         {
             PlayerPrefs.DeleteKey(RecordKey);
             PlayerPrefs.DeleteKey(BoardKey);
+            PlayerPrefs.DeleteKey(RevivesKey);
             PlayerPrefs.Save();
         }
     }

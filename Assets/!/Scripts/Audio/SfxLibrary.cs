@@ -7,6 +7,7 @@ namespace NumberMerge.Audio
     {
         ButtonPress,
         TileInsert,
+        TileDestroy,
         Combination,
         GameStart,
         GameOver,
@@ -25,6 +26,8 @@ namespace NumberMerge.Audio
         [Header("Gameplay")]
         [Tooltip("Played when a tile is inserted into the board, at the moment it lands.")]
         [SerializeField] private AudioClip[] _tileInsert;
+        [Tooltip("Played once when tiles are destroyed (revive), at the moment they start to fade out.")]
+        [SerializeField] private AudioClip[] _tileDestroy;
         [Tooltip("Played for each merge. In a chain, each next merge is pitched up by Chain Pitch Step.")]
         [SerializeField] private AudioClip[] _combination;
         [Tooltip("Pitch added per combination in the same chain. 0.1 = 1x, 1.1x, 1.2x, ...")]
@@ -92,6 +95,8 @@ namespace NumberMerge.Audio
                     return _buttonPress;
                 case SfxId.TileInsert:
                     return _tileInsert;
+                case SfxId.TileDestroy:
+                    return _tileDestroy;
                 case SfxId.Combination:
                     return _combination;
                 case SfxId.GameStart:

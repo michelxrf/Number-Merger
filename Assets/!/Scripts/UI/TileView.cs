@@ -54,10 +54,25 @@ namespace NumberMerge.UI
             }
         }
 
+        // Multiplies the tile's background by this color. White shows the tile unchanged.
+        public void SetTint(Color color)
+        {
+            if (_background == null)
+            {
+                _background = GetComponent<Image>();
+            }
+
+            if (_background != null)
+            {
+                _background.color = color;
+            }
+        }
+
         public void ResetVisual()
         {
             SetScale(1f);
             SetAlpha(1f);
+            SetTint(Color.white);
         }
     }
 }

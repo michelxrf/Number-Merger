@@ -15,6 +15,8 @@ namespace NumberMerge.UI
         [SerializeField] private TileTheme _theme;
         [Tooltip("Grid and animation settings. Loaded on Start.")]
         [SerializeField] private BoardViewConfig _config;
+        [Tooltip("UI petal burst prefab (UIParticle root with a ParticleSystem child), spawned at each destroyed tile. Its shape is set to the tile size at runtime.")]
+        [SerializeField] private GameObject _petalBurstPrefab;
 
         // Runtime values, copied from _config on Start.
         private int _columnCount = 5;
@@ -25,6 +27,11 @@ namespace NumberMerge.UI
         private float _mergeDuration = 0.12f;
         private float _popDuration = 0.12f;
         private float _gravityDuration = 0.12f;
+        private float _destroyDuration = 0.5f;
+        private float _blinkDuration = 0.2f;
+        private Color _blinkColor = new Color(1f, 0.25f, 0.25f, 1f);
+        private float _punchScale = 1.2f;
+        private float _petalEmitterScale = 0.2f;
         private bool _configLoaded;
 
         private readonly List<TileView> _spawnedTiles = new List<TileView>();
@@ -96,6 +103,11 @@ namespace NumberMerge.UI
             _mergeDuration = _config.MergeDuration;
             _popDuration = _config.PopDuration;
             _gravityDuration = _config.GravityDuration;
+            _destroyDuration = _config.DestroyDuration;
+            _blinkDuration = _config.BlinkDuration;
+            _blinkColor = _config.BlinkColor;
+            _punchScale = _config.PunchScale;
+            _petalEmitterScale = _config.PetalEmitterScale;
         }
 
         public void Initialize(BoardModel board)
@@ -224,11 +236,156 @@ namespace NumberMerge.UI
                 AudioManager.Instance?.Play(SfxId.TileInsert);
             }
 
-            yield return AnimateGravity(move.AfterInsertion, move.Cascade.AfterInitialGravity);
+            yield return PlayCascade(move.Cascade, move.AfterInsertion);
+            EnsureGridMatches(move.Cascade.FinalBoard);
+        }
 
-            for (int i = 0; i < move.Cascade.Steps.Count; i++)
+        // Fades out all destroyed tiles at the same time (alpha only), with a petal burst on each one,
+        // then plays the solve that followed the removal (gravity and merges).
+        public IEnumerator PlayDestruction(DestructionResult destruction)
+        {
+            if (destruction == null)
             {
-                CascadeStep step = move.Cascade.Steps[i];
+                yield break;
+            }
+
+            EnsureBuilt();
+            SetBoard(destruction.Before);
+
+            var doomed = new List<TileView>(destruction.Destroyed.Count);
+            for (int i = 0; i < destruction.Destroyed.Count; i++)
+            {
+                BoardPosition position = destruction.Destroyed[i];
+                TileView tile = _tileGrid[position.Row, position.Column];
+                if (tile != null)
+                {
+                    doomed.Add(tile);
+                }
+            }
+
+            AudioManager.Instance?.Play(SfxId.TileDestroy);
+
+            // The petal burst and the red blink start together.
+            for (int i = 0; i < doomed.Count; i++)
+            {
+                SpawnPetalBurst(doomed[i].GetComponent<RectTransform>().anchoredPosition);
+            }
+
+            PunchTiles(doomed);
+            yield return BlinkTiles(doomed);
+
+            if (_destroyDuration > 0f)
+            {
+                float elapsed = 0f;
+
+                while (elapsed < _destroyDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float alpha = 1f - Mathf.Clamp01(elapsed / _destroyDuration);
+
+                    for (int i = 0; i < doomed.Count; i++)
+                    {
+                        if (doomed[i] != null)
+                        {
+                            doomed[i].SetAlpha(alpha);
+                        }
+                    }
+
+                    yield return null;
+                }
+            }
+
+            for (int i = 0; i < destruction.Destroyed.Count; i++)
+            {
+                BoardPosition position = destruction.Destroyed[i];
+                TileView tile = _tileGrid[position.Row, position.Column];
+                if (tile != null)
+                {
+                    Debug.Log(
+                        "[BoardView] Destroyed tile value " + destruction.Before.GetValue(position.Column, position.Row) +
+                        " at (" + position.Column + ", " + position.Row + ")", this);
+                    _tileGrid[position.Row, position.Column] = null;
+                    DestroyTile(tile);
+                }
+            }
+
+            // The removed cells are now empty in the grid, which matches AfterRemoval.
+            yield return PlayCascade(destruction.Cascade, destruction.AfterRemoval);
+            EnsureGridMatches(destruction.Cascade.FinalBoard);
+        }
+
+        // Scales the tiles up to _punchScale and back to 1, over the blink duration (half up, half back).
+        private void PunchTiles(List<TileView> tiles)
+        {
+            float half = Mathf.Max(0f, _blinkDuration * 0.5f);
+
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                TileView tile = tiles[i];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                GameObject go = tile.gameObject;
+                LeanTween.cancel(go);
+                LeanTween.scale(go, Vector3.one * _punchScale, half)
+                    .setEase(LeanTweenType.easeOutQuad)
+                    .setOnComplete(() =>
+                    {
+                        if (go != null)
+                        {
+                            LeanTween.scale(go, Vector3.one, half).setEase(LeanTweenType.easeInQuad);
+                        }
+                    });
+            }
+        }
+
+        // Turns the tiles from their normal color to the blink color over _blinkDuration, then holds that color.
+        // The color stays on the tiles while they fade out.
+        private IEnumerator BlinkTiles(List<TileView> tiles)
+        {
+            if (tiles.Count == 0)
+            {
+                yield break;
+            }
+
+            float elapsed = 0f;
+
+            while (elapsed < _blinkDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = _blinkDuration > 0f ? Mathf.Clamp01(elapsed / _blinkDuration) : 1f;
+                Color tint = Color.Lerp(Color.white, _blinkColor, t);
+
+                for (int i = 0; i < tiles.Count; i++)
+                {
+                    if (tiles[i] != null)
+                    {
+                        tiles[i].SetTint(tint);
+                    }
+                }
+
+                yield return null;
+            }
+
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                if (tiles[i] != null)
+                {
+                    tiles[i].SetTint(_blinkColor);
+                }
+            }
+        }
+
+        // Gravity, then every merge step of the cascade, in order. gravityFrom is the board before the first gravity.
+        private IEnumerator PlayCascade(CascadeResult cascade, BoardSnapshot gravityFrom)
+        {
+            yield return AnimateGravity(gravityFrom, cascade.AfterInitialGravity);
+
+            for (int i = 0; i < cascade.Steps.Count; i++)
+            {
+                CascadeStep step = cascade.Steps[i];
 
                 // Every merge in a chain plays its own sound, in sync with its animation. The index is the
                 // number of combinations before this one since the last insert, so the pitch rises per link.
@@ -236,8 +393,47 @@ namespace NumberMerge.UI
                 yield return AnimateMerge(step);
                 yield return AnimateGravity(step.AfterMerge, step.AfterGravity);
             }
+        }
 
-            EnsureGridMatches(move.Cascade.FinalBoard);
+        // One-shot burst centered on the tile, covering the tile's square. Destroyed after it has played.
+        private void SpawnPetalBurst(Vector2 anchoredPosition)
+        {
+            if (_petalBurstPrefab == null)
+            {
+                return;
+            }
+
+            GameObject instance = Instantiate(_petalBurstPrefab, transform, false);
+
+            var instanceRect = instance.GetComponent<RectTransform>();
+            if (instanceRect != null)
+            {
+                instanceRect.anchorMin = new Vector2(0.5f, 0.5f);
+                instanceRect.anchorMax = new Vector2(0.5f, 0.5f);
+                instanceRect.pivot = new Vector2(0.5f, 0.5f);
+                instanceRect.anchoredPosition = anchoredPosition;
+            }
+
+            ParticleSystem burst = instance.GetComponentInChildren<ParticleSystem>(true);
+            if (burst == null)
+            {
+                Destroy(instance);
+                return;
+            }
+
+            // Box shape covering the whole tile, so petals start from a filled square.
+            ParticleSystem.ShapeModule shape = burst.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            float emitterSize = _cellSize * _petalEmitterScale;
+            shape.scale = new Vector3(emitterSize, emitterSize, 0f);
+
+            instance.SetActive(true);
+            burst.Play(true);
+
+            ParticleSystem.MainModule main = burst.main;
+            float lifetime = main.duration + main.startLifetime.constantMax;
+            Destroy(instance, lifetime + 0.1f);
         }
 
         private void EnsureBuilt()

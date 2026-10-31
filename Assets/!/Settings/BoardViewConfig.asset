@@ -20,3 +20,8 @@ MonoBehaviour:
   _mergeDuration: 0.12
   _popDuration: 0.12
   _gravityDuration: 0.12
+  _destroyDuration: 0.5
+  _blinkDuration: 0.2
+  _blinkColor: {r: 1, g: 0.5330188, b: 0.64548546, a: 1}
+  _punchScale: 1.2
+  _petalEmitterScale: 0.2
