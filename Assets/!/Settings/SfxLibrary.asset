@@ -16,6 +16,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: de3256a80f15a594eb12c51e8aa1c1bd, type: 3}
   _tileInsert:
   - {fileID: 8300000, guid: 09a3c7b55ce087f499930db64930f9f7, type: 3}
+  _tileDestroy:
+  - {fileID: 8300000, guid: 94e0224735602eb4487d25491a0edcba, type: 3}
   _combination:
   - {fileID: 8300000, guid: fdb50bfb1c7435747a96cc92717a3ef9, type: 3}
   _chainPitchStep: 0.1

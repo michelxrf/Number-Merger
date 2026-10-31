@@ -1,9 +1,9 @@
 # Number Merge — Documentação do Estado Atual
 
-> Última atualização: 2026-10-29  
+> Última atualização: 2026-10-30  
 > Projeto: `D:\Projects\Number Merger`  
 > Unity: `6000.3.10f1`  
-> Último commit incluído: `565d214 combos`
+> Último commit incluído: `8b65171 fiddling`
 
 ## Sumário
 
@@ -48,7 +48,7 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 
 - Inserção na célula vazia mais baixa da coluna.
 - Rejeição de coluna cheia (a peça atual não é consumida).
-- Combinação de 2 a 5 peças iguais adjacentes, com resultado limitado a `8192`.
+- Combinação de 2 a 5 peças iguais adjacentes, com resultado limitado ao teto de combinação (`MergeCeilingValue`, padrão `8192`, asset atual `16384`).
 - Prioridade por maior número de vizinhos iguais; empate resolvido aleatoriamente.
 - Gravidade e múltiplas cascatas, com proteções contra progresso inválido, ciclos e loops longos.
 - Geração de peças: elegibilidade e probabilidades base em `SpawnTable`, ajustadas pela pressão do tabuleiro (ver seção 6).
@@ -59,8 +59,12 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 - Som de cada combinação em cadeia com pitch crescente, e som de combo com pitch crescente na tela de resultado.
 - Recorde persistido em `PlayerPrefs`.
 - Salvamento da partida após cada jogada válida; retomada ao abrir o jogo.
-- Game over quando uma coluna fica com 8 peças; o save da partida é apagado.
-- Tela de game over com pontos e recorde, e botão de reinício.
+- Game over quando uma coluna fica com 8 peças. O save não é apagado: continua no estado anterior à jogada que causou o game over.
+- Tela de game over com pontos, recorde, botão “Novo Jogo” e botão “Reviver” (ver seção 9.16).
+- Reviver: remove peças aleatórias do tabuleiro e continua a partida. Cada jogador começa com 1 reviver.
+- Efeito visual de pétalas e piscada vermelha nas peças removidas (reviver).
+- Recorde e pontuação com pulso visual ao subir, e formatação de milhar por cultura.
+- Pausa com fade in/out e reinício que também restaura os revives.
 - Overlay de debug (F12) com fechar, reiniciar e limpar dados.
 - Música de fundo tocada pelo `AudioManager` (persistente entre cenas).
 - Fundo em tela cheia (`FullscreenBackground`) com ajuste "cover".
@@ -69,7 +73,8 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 ### Pendente ou não implementado
 
 - Cena `MainMenu` funcional e transição menu → gameplay. (O objeto `ContinueButton` existe na cena `Gameplay`, mas nenhum script do projeto o referencia.)
-- Efeito sonoro de game over (`SfxId.GameOver`) ainda não é tocado pelo jogo. Inserção, combinação em cadeia, combo e início de partida já tocam.
+- Efeito sonoro de game over (`SfxId.GameOver`) é tocado pela `GameOverScreen`, mas o clipe precisa ser conferido no `SfxLibrary.asset`. Inserção, destruição (reviver), combinação em cadeia, combo e início de partida também tocam.
+- Integração de anúncios (LevelPlay/ironSource): o `AdsManager` inicializa o SDK, mas nenhum formato (intersticial, recompensado, banner) está ligado ao jogo.
 - Tipo de peça "bad tile": o campo `BadTileSprite` existe no tema, mas a mecânica não foi implementada.
 - Teste automatizado do caminho real de toque no Editor.
 - Testes automatizados para os demais sistemas de lógica. A cobertura atual é apenas a geração de peças (ver seção 13).
@@ -125,6 +130,8 @@ Assets/
         PieceGenerationConfig.cs (ScriptableObject)
       Managers/
         ScoreService.cs, ComboCounter.cs
+      Ads/
+        AdsManager.cs         Inicialização do LevelPlay (ironSource)
       Save/
         BoardState.cs, SaveSystem.cs
       UI/
@@ -227,7 +234,7 @@ Os valores elegíveis são sempre os mesmos da camada 1. A camada 2 e 3 só muda
 
 A probabilidade de cada valor depende das peças presentes no tabuleiro:
 
-1. **Teto:** o teto é `maior peça do tabuleiro × 2^SpawnCeilingLevelOffset`, limitado a 8192 (`SpawnTable.CalculateCeiling`). Nascem valores até o teto, inclusive. O padrão `SpawnCeilingLevelOffset = -1` dá metade da maior peça. `0` permite que a maior peça nasça; valores positivos permitem valores acima dela; valores negativos reduzem o teto, e um teto abaixo de 2 deixa só o `2`. Um tabuleiro vazio ignora o offset.
+1. **Teto:** o teto é `maior peça do tabuleiro × 2^SpawnCeilingLevelOffset`, limitado a `MergeCeilingValue` (`SpawnTable.CalculateCeiling`). Nascem valores até o teto, inclusive. O padrão `SpawnCeilingLevelOffset = -1` dá metade da maior peça. `0` permite que a maior peça nasça; valores positivos permitem valores acima dela; valores negativos reduzem o teto, e um teto abaixo de 2 deixa só o `2`. Um tabuleiro vazio ignora o offset.
 2. **Candidatos:** são elegíveis todas as potências de 2 até o teto, **estejam ou não no tabuleiro**, além de outros valores presentes no tabuleiro até o teto.
 3. **Pesos:** cada valor presente no tabuleiro tem peso igual à quantidade dessa peça. Uma potência de 2 ausente do tabuleiro recebe o peso `AbsentValueWeight` (padrão 0,5, em unidades de uma peça). Com `AbsentValueWeight = 0`, só valores presentes no tabuleiro nascem, como antes.
 4. **Mínimo do `2`:** o valor `2` sempre tem pelo menos **20%** de chance (`MinimumValueChance`), mesmo que não esteja no tabuleiro. Se a parcela proporcional for menor, o `2` recebe 20% e os demais dividem os 80% restantes proporcionalmente.
@@ -286,7 +293,7 @@ Efeito esperado: em pressão baixa, a geração favorece peças com boas combina
 - Apenas peças iguais adjacentes **ortogonalmente** (cima, baixo, esquerda, direita).
 - Participantes: mínimo 2, máximo 5 (a peça de origem mais até 4 vizinhos).
 - Resultado: `valor × 2^(participantes − 1)`, ou seja, dobra a cada participante extra.
-- Resultado máximo: `8192`. Uma combinação cujo resultado ultrapassaria `8192` não acontece; peças de valor `8192` não combinam.
+- Teto de combinação (`MergeCeilingValue`, potência de 2 entre 2 e 2^30): peças com valor igual ou acima do teto não combinam, e nenhum resultado pode passar dele. O mesmo valor limita o maior valor que pode nascer e o cálculo de pontos máximos por jogada. Padrão do código: `8192`; asset atual: `16384`.
 - Prioridade: candidatos com mais vizinhos iguais são resolvidos primeiro.
 - Empate: sorteio entre os candidatos da mesma prioridade.
 - A peça de origem recebe o resultado e os vizinhos são removidos.
@@ -309,6 +316,7 @@ Exemplos:
 - A pontuação é acumulada por toda a cascata da jogada.
 - `ScoreService` usa `long` e verifica overflow antes de somar (`CanAdd`/`TryAdd`). Antes de cada jogada, `BoardController` confirma que a pontuação suporta o pior caso possível (`MaxPossibleCascadePoints`: 8 linhas × 5 colunas × 8192).
 - O recorde é atualizado sempre que a pontuação atual o supera e é salvo junto com a partida (ver seção 8).
+- A remoção do reviver não dá pontos. As combinações causadas pela resolução do tabuleiro pontuam normalmente.
 
 ### Combos e cadeias
 
@@ -350,8 +358,10 @@ Com os padrões, o contador 2 (3 combinações) toca em 1x, o contador 3 em 1,1x
 ### Game over
 
 - Ocorre quando, após uma jogada, alguma coluna tem 8 peças.
-- A tela de game over mostra pontos e recorde e oferece reinício.
-- Ao acontecer, o save da partida em andamento é apagado: não é possível retomar uma partida terminada.
+- A tela de game over mostra pontos e recorde e oferece dois botões:
+  - **Novo Jogo:** apaga o save da partida, restaura os revives para o padrão e recarrega a cena.
+  - **Reviver:** habilitado só se o jogador tiver revives. Gasta 1 revive (ver seção 9.16).
+- O save não é apagado em game over. Se o jogo for fechado na tela de game over, ao reabrir a partida ela volta no estado anterior à jogada que causou o game over, com a mesma peça atual.
 
 ## 7. Fluxo de uma jogada
 
@@ -382,7 +392,8 @@ Arquivo: `Assets/!/Scripts/Save/SaveSystem.cs`. Usa `PlayerPrefs`, que funciona 
 | Chave | Conteúdo | Quando é salva | Quando é apagada |
 |---|---|---|---|
 | `NumberMerge.Record` | Recorde como texto (`long`) | Ao final de cada jogada e na inicialização | Pelo overlay de debug |
-| `NumberMerge.Board` | `BoardState` em JSON | Na inicialização e ao final de cada jogada válida | Em game over, ou quando o dado é inválido |
+| `NumberMerge.Board` | `BoardState` em JSON | Na inicialização, ao final de cada jogada válida e ao final de cada reviver | Em “Novo Jogo”, ou quando o dado é inválido. Não é apagada em game over |
+| `NumberMerge.Revives` | Revives restantes (`int`) | Ao gastar um revive, em “Novo Jogo” e em reinício pela pausa | Pelo overlay de debug. Ausente em instalação nova: vale `1` (`SaveSystem.DefaultRevives`) |
 
 `BoardState` guarda:
 
@@ -406,6 +417,7 @@ Observação: o save é gravado depois que a animação termina. Se o jogo for f
 Arquivo: `Assets/!/Scripts/Gameplay/BoardModel.cs`
 
 - Matriz `int[TotalRowCount, ColumnCount]`; `0` é célula vazia.
+- `IsValidColumn`, `IsValidRow` e `IsEmpty` validam posições antes da remoção do reviver.
 - `TryInsert` encontra a linha vazia mais baixa.
 - `ApplyGravity` compacta as peças para baixo.
 - `GetPieceCount`, `GetHeight`, `IsColumnFull`, `HasOverflow`.
@@ -464,8 +476,9 @@ Parâmetros (`PieceGenerationSettings`, serializados no asset):
 | `LowPressureWeights` / `ModeratePressureWeights` / `HighPressureWeights` | ver seção 6 | Pesos de F, M, C e P nas três âncoras. |
 | `ModeratePressurePoint` | 0,5 | Posição da âncora moderada na pressão normalizada. |
 | `AbsentValueWeight` | 0,5 | Peso de cada potência de 2 ausente do tabuleiro (em peças). `0` restaura a regra antiga de só nascer o que já está no tabuleiro. |
-| `SpawnCeilingLevelOffset` | -1 | Teto de geração em níveis a partir da maior peça: `maior × 2^nível`, limitado a 8192. Negativo = abaixo da maior peça, positivo = acima. Faixa de -10 a 10. |
-| `SpawnHardCeiling` | 0 | Teto fixo para peças geradas: nenhuma peça acima deste valor nasce. `0` = sem teto. Potência de 2 de 2 a 8192. Não limita o resultado das combinações. |
+| `MergeCeilingValue` | 8192 (asset: 16384) | Valor em que as combinações param. Peças nesse valor não combinam e nenhum resultado passa dele. Também é o maior valor que pode nascer. Potência de 2 de 2 a 2^30. |
+| `SpawnCeilingLevelOffset` | -1 | Teto de geração em níveis a partir da maior peça: `maior × 2^nível`, limitado a `MergeCeilingValue`. Negativo = abaixo da maior peça, positivo = acima. Faixa de -10 a 10. |
+| `SpawnHardCeiling` | 0 | Teto fixo para peças geradas: nenhuma peça acima deste valor nasce. `0` = sem teto. Potência de 2 de 2 até `MergeCeilingValue`. Não limita o resultado das combinações. |
 | `Temperature` | 0,8 | Nitidez da seleção. Valores menores tornam a escolha mais decisiva. |
 | `MinimumCandidateProbability` | 0,01 | Piso uniforme por candidato, limitado a `1/n`. |
 | `MergeParticipantValues` | 0,6 / 0,8 / 0,9 / 1,0 | Valor da combinação por número de participantes (2 a 5). |
@@ -481,9 +494,10 @@ Arquivos: `MergeMath.cs`, `MergeResolver.cs`
 
 `MergeMath` centraliza:
 
-- Valor máximo `8192`.
 - Participantes mínimos (`2`) e máximos (`5`).
-- Cálculo do resultado: `valor << (participantes − 1)`, rejeitado se passar de `8192`.
+- `IsValidCeiling(valor)`: aceita potências de 2 de 2 a 2^30 (`MaxSupportedCeiling`).
+- `CanCombine(valor, teto)`: valor abaixo do teto.
+- Cálculo do resultado: `valor << (participantes − 1)`, em `long`, rejeitado se passar do teto configurado (`MergeCeilingValue`).
 
 `MergeResolver.TryResolveOnce`:
 
@@ -521,6 +535,10 @@ Arquivos: `BoardController.cs`, `ScoreService.cs`
 - Soma os valores resultantes e atualiza a pontuação.
 - Define `IsGameOver` pelo overflow de qualquer coluna.
 - Produz `MoveResult`.
+
+`BoardController` recebe `mergeCeilingValue` (`PieceGenerationSettings.MergeCeilingValue`) no construtor e o usa em `MaxPossibleCascadePoints`. Ele precisa ser o mesmo valor usado pelo `MergeResolver`.
+
+`TryDestroyTiles(posições, out DestructionResult)` remove as peças indicadas de uma vez e depois resolve o tabuleiro (gravidade e combinações). Diferente de `TryPlay`, funciona em game over, porque é como o jogo se recupera. Retorna `false`, sem alterar o tabuleiro, se alguma posição for inválida, vazia ou repetida. `GetOverflowedColumns()` lista as colunas que chegam à linha de overflow.
 
 Após resolver a cascata, `BoardController` alimenta `Combos` (`ComboCounter`) com o número de combinações da cascata (`AddCascade`). A tela de combo e o `GameplayScreen` leem `Combos.Count` e depois chamam `Combos.Reset()`. Detalhes na seção 9.15.
 
@@ -616,14 +634,18 @@ Textos de status:
 - “Resolvendo...”
 - “Coluna cheia”
 
-O texto de pontuação mostra pontos e recorde na mesma linha.
+Pontuação e recorde são dois `TMP_Text` separados (`_scoreText` e `_recordText`), formatados por `ScoreFormatter` (separador de milhar conforme a cultura). Quando a pontuação ou o recorde sobe em uma jogada, o texto correspondente recebe um `ScorePulse` (pulso de escala). O primeiro refresh ao carregar a cena não pulsa.
+
+`GameplayScreen` também expõe `DestroyTiles` (usado pelo reviver, seção 9.16) e aceita `DebugRevive` pela tecla **F11** (editor e builds de desenvolvimento, sem gastar revive).
 
 ### 9.11 `GameOverScreen`
 
 Arquivo: `Assets/!/Scripts/UI/GameOverScreen.cs`
 
-- Mostra um overlay com “Pontos” e “Recorde”.
-- O botão de reinício recarrega a cena `Gameplay`. Como o save foi apagado, a nova partida começa do zero.
+- Mostra um overlay com “Pontos” e “Recorde”, e recebe o número de revives restantes. O overlay abre e fecha com `OverlayFade` (fade e escala, em tempo não escalado).
+- **Novo Jogo** (`_restartButton`): apaga o save do tabuleiro, restaura os revives para `DefaultRevives` e recarrega a cena `Gameplay`.
+- **Reviver** (`_continueButton`): fica habilitado só com revives > 0. Chama `TriggerContinue`, que desabilita os dois botões e faz o fade-out. Ao terminar, dispara `ContinueConfirmed`, tratado pelo `GameplayScreen`.
+- Os botões ficam desabilitados durante o fade, para que o reviver não seja disparado duas vezes.
 
 ### 9.12 `DebugScreen`
 
@@ -700,6 +722,55 @@ Se o `ComboResultConfig` não estiver atribuído, `Show` não faz nada.
 
 Observação: o som de inserção (`SfxId.TileInsert`) toca quando a peça pousa, antes da cascata. Os elos de cadeia começam depois dele.
 
+### 9.16 Reviver
+
+Arquivos: `ReviveSelection.cs`, `ReviveConfig.cs`, `DestructionResult.cs`, `BoardController.cs`, `GameplayScreen.cs`, `GameOverScreen.cs`, `BoardView.cs`, `TileView.cs`, `OverlayFade.cs`, `SaveSystem.cs`
+
+Fluxo, do game over ao jogo retomado:
+
+1. `GameOverScreen` mostra o botão **Reviver**. Ao clicar, faz o fade-out e dispara `ContinueConfirmed`.
+2. `GameplayScreen` espera `DestructionDelay` (em tempo real, `ReviveConfig`).
+3. `ReviveSelection.Choose` escolhe as peças a remover (ver abaixo).
+4. `GameplayScreen.DestroyTiles` chama `BoardController.TryDestroyTiles`. A remoção acontece de uma vez e a cascata é resolvida normalmente.
+5. `BoardView.PlayDestruction` anima: toca `SfxId.TileDestroy`, faz a explosão de pétalas, o pulso de escala (`PunchScale`), a piscada para `BlinkColor` (`BlinkDuration`) e o fade-out (`DestroyDuration`). Depois anima a gravidade e as combinações da cascata.
+6. Ao terminar a animação, o tabuleiro é salvo. Só então o revive é gasto (`SaveSystem.SaveRevives`). Se a cascata causou combinações, `ComboResultScreen` as mostra como em uma jogada normal.
+7. Se a remoção não puder ser feita (por exemplo, nenhuma peça escolhida), a tela de game over volta a aparecer com o mesmo número de revives.
+
+Escolha das peças (`ReviveSelection.Choose`):
+
+- **Quantidade:** `floor(peças no tabuleiro × MaxDestroyedFraction)`, com mínimo `MinDestroyedTiles`, limitada ao total de peças.
+- **Obrigatórias:** o topo de cada coluna que chegou ao overflow. Sem elas o tabuleiro continuaria em game over depois da gravidade. Por isso a quantidade pode ser maior que a calculada.
+- **Demais:** sorteio (Fisher-Yates) com `IRandomSource`. Só a escolha é aleatória.
+
+Parâmetros (`ReviveConfig`, asset `Assets/!/Settings/ReviveConfig.asset`, menu `Number Merge/Revive Config`):
+
+| Parâmetro | Padrão (código) | Asset atual | Efeito |
+|---|---:|---:|---|
+| `MinDestroyedTiles` | 1 | 3 | Mínimo de peças removidas. |
+| `MaxDestroyedFraction` | 0,2 | 0,2 | Fração máxima de peças removidas, arredondada para baixo. |
+| `DestructionDelay` | 0,5 s | 1 s | Espera, após o fade-out, antes da remoção (tempo real). |
+
+Revives:
+
+- Cada jogador começa com `SaveSystem.DefaultRevives` (1). O valor é salvo em `NumberMerge.Revives`.
+- O revive é gasto só depois que a remoção foi resolvida e salva (ver passo 6).
+- “Novo Jogo” e o reinício pela pausa restauram o padrão.
+- A tecla **F11** (editor e builds de desenvolvimento) reinicia a partir do game over sem gastar revive. Usa `_debugFreeRevive`. Só funciona se a partida estiver em game over.
+
+Efeito visual: `TilePetalBurst.prefab` (UIParticle com `ParticleSystem`), criado em cada peça removida. A forma do emissor é um box cobrindo a peça, escalado por `PetalEmitterScale`. A instância é destruída depois que a partícula termina. Material: `ComboPetals.mat`.
+
+Configuração visual (`BoardViewConfig`):
+
+| Parâmetro | Padrão | Efeito |
+|---|---:|---|
+| `DestroyDuration` | 0,5 s | Fade-out das peças removidas. |
+| `BlinkDuration` | 0,2 s | Tempo até a cor de piscada. A explosão começa junto. |
+| `BlinkColor` | vermelho claro | Cor mantida durante o fade-out. |
+| `PunchScale` | 1,2 | Escala máxima do pulso (volta para 1). |
+| `PetalEmitterScale` | 0,2 | Tamanho do emissor em relação à peça. |
+
+Como as peças removidas ficam visíveis durante a animação, `TileView.SetTint` é usado para a piscada. `ResetVisual` restaura a cor branca.
+
 ## 10. Cena e layout
 
 ### Objetos da cena `Gameplay`
@@ -774,7 +845,9 @@ As animações de combinação e gravidade continuam em coroutines com interpola
    - Coluna cheia mantendo a peça atual.
    - Recorde mantido após fechar e reabrir o jogo.
    - Partida retomada após fechar e reabrir o jogo.
-   - Game over com pontos e recorde, e reinício.
+   - Game over com pontos e recorde, e “Novo Jogo”.
+   - Reviver no game over: peças removidas com piscada e pétalas, cascata resolvida, revive gasto (1 por jogador). Com 0 revives, o botão fica desabilitado.
+   - F11 (editor ou build de desenvolvimento): reviver sem gastar revive.
    - F12 abrindo o overlay de debug, com “limpar dados e reiniciar”.
 
 Testes automatizados:
@@ -815,7 +888,7 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 
 5. Criar a cena de menu e a transição para o gameplay, ou remover o `MainMenu` e o `ContinueButton` se não forem usados.
 6. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `ScoreService` e `BoardState`. A geração de peças já tem testes.
-7. Ligar o efeito sonoro de game over (`SfxId.GameOver`). Drop, combinação em cadeia e combo já estão ligados.
+7. Conferir o clipe de `SfxId.GameOver` (a `GameOverScreen` já o toca) e ligar os formatos de anúncio do `AdsManager` (intersticial, recompensado), se forem usados.
 
 ### Prioridade baixa
 
@@ -867,7 +940,14 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 | `Assets/!/Scripts/UI/PieceQueueView.cs` | Fila visual de duas peças |
 | `Assets/!/Scripts/UI/TileView.cs` | Visual individual de tile |
 | `Assets/!/Scripts/UI/TileTheme.cs` | Sprites e cores das peças e do tabuleiro |
-| `Assets/!/Scripts/UI/GameOverScreen.cs` | Tela de game over e reinício |
+| `Assets/!/Scripts/UI/GameOverScreen.cs` | Tela de game over, “Novo Jogo” e “Reviver” |
+| `Assets/!/Scripts/Gameplay/ReviveSelection.cs` | Escolha das peças removidas pelo reviver |
+| `Assets/!/Scripts/Gameplay/ReviveConfig.cs` | ScriptableObject com os parâmetros do reviver |
+| `Assets/!/Settings/ReviveConfig.asset` | Asset de balanceamento do reviver |
+| `Assets/!/Scripts/Ads/AdsManager.cs` | Inicialização do LevelPlay (ironSource) |
+| `Assets/!/Scripts/UI/OverlayFade.cs` | Fade in/out de overlays (game over e pausa) |
+| `Assets/!/Scripts/UI/ScorePulse.cs` | Pulso de escala nos textos de pontuação e recorde |
+| `Assets/!/Scripts/UI/ScoreFormatter.cs` | Formatação de milhar da pontuação |
 | `Assets/!/Scripts/UI/DebugScreen.cs` | Overlay de debug (F12) |
 | `Assets/!/Scripts/UI/FullscreenBackground.cs` | Fundo em tela cheia |
 | `Assets/!/Prefabs/Tile.prefab` | Prefab base do tile |
@@ -878,7 +958,23 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 
 ## 16. Mudanças desde a versão anterior
 
-Esta seção resume o que mudou em relação ao documento de 2026-10-23:
+Esta seção resume o que mudou em relação ao documento de 2026-10-23.
+
+#### Atualização de 2026-10-30
+
+- **Reviver no game over (`8b65171`, `31d2434`):** a tela de game over tem o botão “Reviver”. Ele remove peças aleatórias (`ReviveSelection`, com o topo das colunas em overflow sempre incluído) e resolve a cascata. O revive é gasto só depois que o tabuleiro é salvo. Cada jogador começa com 1, salvo em `NumberMerge.Revives`. Detalhes na seção 9.16.
+- **Game over não apaga mais o save (`31d2434`):** o save fica no estado anterior à jogada que causou o game over. Antes era apagado. Seções 6, 8 e 9.11 atualizadas.
+- **“Novo Jogo” separado de “Reviver” (`31d2434`):** o botão de reinício da tela de game over apaga o save e restaura os revives. Reinício pela pausa também restaura os revives.
+- **Efeito visual do reviver (`31d2434`):** explosão de pétalas (`TilePetalBurst.prefab`, material `ComboPetals.mat`), pulso de escala, piscada vermelha e fade-out das peças removidas. Novos campos em `BoardViewConfig`. Novo som `SfxId.TileDestroy`.
+- **Teto de combinação configurável (`9a6f062`):** `MergeCeilingValue` em `PieceGenerationSettings` substitui o `8192` fixo. Vale para as combinações, para o teto de geração e para o cálculo de pontos máximos. O asset atual usa `16384`. `BoardController`, `MergeResolver` e `SpawnTable` recebem o valor por construtor ou parâmetro.
+- **Anúncios (`9a6f062`):** `AdsManager` inicializa o LevelPlay (ironSource) com App Key e user ID. Pacotes e arquivos de dependência Android foram adicionados. Nenhum formato de anúncio está ligado ao jogo.
+- **Pausa com fade (`c6ce95d`):** `OverlayFade` faz fade e escala no overlay de pausa e no de game over, em tempo não escalado. Ao reiniciar pela pausa, o botão é desabilitado para evitar duas cargas de cena.
+- **Pontuação e recorde (`3c7ff13`, `4ab6035`):** são dois textos separados. A formatação de milhar segue a cultura (`ScoreFormatter`). `ScorePulse` pulsa quando sobem.
+- **Efeito de combo (`3f6e75e`, `83c8ee7`):** a tela de combo dispara uma explosão de partículas (`ComboPetals`) a cada exibição. A curva de entrada é configurável (`FadeInEase`, padrão `easeOutBack`).
+- **Testes novos:** `MergeCeilingTests`, `ReviveSelectionTests` e `TileDestructionTests`. `SpawnTableTests` e `PieceGeneratorTests` foram atualizados para o novo teto.
+- **Tecla F11 (`31d2434`):** reviver a partir do game over sem gastar revive, em editor e builds de desenvolvimento.
+
+#### Atualização de 2026-10-29
 
 - **Combos e cadeias (2026-10-29):** `ComboCounter` conta as combinações além da primeira em cada jogada. A tela `ComboResultScreen` mostra “NNx” no centro quando a jogada tem 3 ou mais combinações (`MinCombosToShow` = 2 combos). Cada combinação da cascata toca `Combination` com pitch crescente por elo (`ChainPitchStep`), e a tela toca `ComboSfx` com pitch crescente a partir do 3º combo (`ComboResultConfig`). Detalhes nas seções 6 (“Combos e cadeias”) e 9.15.
 
