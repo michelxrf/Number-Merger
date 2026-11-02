@@ -3,11 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using NumberMerge.Audio;
 using NumberMerge.Gameplay;
+using NumberMerge.Localization;
 using NumberMerge.Managers;
 using NumberMerge.Save;
 using UnityEngine;
 using TMPro;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.Localization;
 using UnityEngine.Localization.Components;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -59,6 +62,16 @@ namespace NumberMerge.UI
 
         // Set by the debug key so the next revive does not spend one.
         private bool _debugFreeRevive;
+
+        private void OnEnable()
+        {
+            LanguageManager.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnDisable()
+        {
+            LanguageManager.LanguageChanged -= OnLanguageChanged;
+        }
 
         private void Awake()
         {
@@ -518,8 +531,7 @@ namespace NumberMerge.UI
             long score = _controller.CurrentScore;
             long record = _controller.Record;
 
-            UiText.SetKey(_recordLocalize, "score.record", ScoreFormatter.Format(record));
-            UiText.SetKey(_scoreLocalize, "score.points", ScoreFormatter.Format(score));
+            UpdateScoreLabels(score, record);
 
             // The first refresh (scene load) shows the values without pulsing; later increases pulse their own text.
             if (_hasShownScore)
@@ -547,6 +559,18 @@ namespace NumberMerge.UI
             }
 
             UiText.SetKey(_statusLocalize, "status.drag_to_choose_column");
+        }
+
+        // Score and record are formatted with the language's digit grouping, so they are set again on a language change.
+        private void UpdateScoreLabels(long score, long record)
+        {
+            UiText.SetKey(_recordLocalize, "score.record", ScoreFormatter.Format(record));
+            UiText.SetKey(_scoreLocalize, "score.points", ScoreFormatter.Format(score));
+        }
+
+        private void OnLanguageChanged(Locale locale)
+        {
+            UpdateScoreLabels(_shownScore, _shownRecord);
         }
     }
 }

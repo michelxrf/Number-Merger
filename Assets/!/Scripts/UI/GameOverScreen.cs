@@ -1,8 +1,10 @@
 using System;
 using NumberMerge.Ads;
 using NumberMerge.Audio;
+using NumberMerge.Localization;
 using NumberMerge.Save;
 using UnityEngine;
+using UnityEngine.Localization;
 using UnityEngine.Localization.Components;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -34,6 +36,10 @@ namespace NumberMerge.UI
         // Raised after the screen has faded out, when the player has watched the ad (or from the debug key).
         public event Action ContinueConfirmed;
 
+        // Values shown on the last Show, kept so the numbers can be formatted again on a language change.
+        private long _shownScore;
+        private long _shownRecord;
+
         // True while the game over screen is visible. Buttons are refreshed only then.
         private bool _isShown;
 
@@ -42,6 +48,16 @@ namespace NumberMerge.UI
 
         // Revives left. The ad button is enabled only while at least one is left.
         private int _revives;
+
+        private void OnEnable()
+        {
+            LanguageManager.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnDisable()
+        {
+            LanguageManager.LanguageChanged -= OnLanguageChanged;
+        }
 
         private void Awake()
         {
@@ -78,8 +94,9 @@ namespace NumberMerge.UI
 
         public void Show(long score, long record, int revives)
         {
-            UiText.SetKey(_scoreLocalize, "score.points", ScoreFormatter.Format(score));
-            UiText.SetKey(_recordLocalize, "score.record", ScoreFormatter.Format(record));
+            _shownScore = score;
+            _shownRecord = record;
+            UpdateScoreLabels();
 
             _revives = revives;
             _isBusy = false;
@@ -155,6 +172,17 @@ namespace NumberMerge.UI
         {
             _isBusy = false;
             RefreshButtons();
+        }
+
+        private void UpdateScoreLabels()
+        {
+            UiText.SetKey(_scoreLocalize, "score.points", ScoreFormatter.Format(_shownScore));
+            UiText.SetKey(_recordLocalize, "score.record", ScoreFormatter.Format(_shownRecord));
+        }
+
+        private void OnLanguageChanged(Locale locale)
+        {
+            UpdateScoreLabels();
         }
 
         // Fades the screen out, then raises ContinueConfirmed. Called after a rewarded ad, and by the debug key.

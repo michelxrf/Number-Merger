@@ -13,6 +13,7 @@ namespace NumberMerge.Save
         private const string BoardKey = "NumberMerge.Board";
         private const string RevivesKey = "NumberMerge.Revives";
         private const string VolumeKeyPrefix = "NumberMerge.Volume.";
+        private const string LanguageKey = "NumberMerge.Language";
 
         // Revives a player starts a new game with (and has on a fresh install).
         public const int DefaultRevives = 1;
@@ -35,6 +36,19 @@ namespace NumberMerge.Save
         public static void SaveVolume(string channelName, float volume)
         {
             PlayerPrefs.SetFloat(VolumeKeyPrefix + channelName, Mathf.Clamp01(volume));
+            PlayerPrefs.Save();
+        }
+
+        // Preferred language as a locale code (for example "es"). Returns false when the player has never chosen one.
+        public static bool TryLoadLanguage(out string code)
+        {
+            code = PlayerPrefs.GetString(LanguageKey, string.Empty);
+            return !string.IsNullOrEmpty(code);
+        }
+
+        public static void SaveLanguage(string code)
+        {
+            PlayerPrefs.SetString(LanguageKey, code);
             PlayerPrefs.Save();
         }
 
@@ -122,12 +136,13 @@ namespace NumberMerge.Save
             PlayerPrefs.Save();
         }
 
-        // Testing only: deletes all player save data (record and board in progress).
+        // Testing only: deletes all player save data (record, board in progress, and language).
         public static void DeleteAllPlayerDataForTesting()
         {
             PlayerPrefs.DeleteKey(RecordKey);
             PlayerPrefs.DeleteKey(BoardKey);
             PlayerPrefs.DeleteKey(RevivesKey);
+            PlayerPrefs.DeleteKey(LanguageKey);
             PlayerPrefs.Save();
         }
     }

@@ -1,3 +1,4 @@
+using NumberMerge.Localization;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Components;
@@ -6,14 +7,14 @@ using UnityEngine.Localization.Settings;
 namespace NumberMerge.UI
 {
     // Applies every LocalizeStringEvent under this object once the localization system is ready,
-    // and again whenever the selected locale changes.
+    // and again whenever the language changes (see LanguageManager).
     public sealed class LocalizedUiRefresher : MonoBehaviour
     {
         private bool _started;
 
         private void OnEnable()
         {
-            Subscribe();
+            LanguageManager.LanguageChanged += OnLanguageChanged;
 
             // Start runs after every OnEnable in the scene, so the labels' own enable logic cannot overwrite the result.
             if (_started)
@@ -30,19 +31,15 @@ namespace NumberMerge.UI
 
         private void OnDisable()
         {
-            LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+            LanguageManager.LanguageChanged -= OnLanguageChanged;
         }
 
-        // Subscribes again after initialization as well: the locale event did not reach this object when it
-        // subscribed before the localization system finished starting.
         private void ApplyWhenReady()
         {
-            Subscribe();
-
             var initialization = LocalizationSettings.InitializationOperation;
             if (initialization.IsDone)
             {
-                ApplyAll();
+                ApplyAll(null);
             }
             else
             {
@@ -50,26 +47,18 @@ namespace NumberMerge.UI
                 {
                     if (this != null && isActiveAndEnabled)
                     {
-                        Subscribe();
-                        ApplyAll();
+                        ApplyAll(null);
                     }
                 };
             }
         }
 
-        private void Subscribe()
-        {
-            // Removing first keeps a single subscription no matter how often this runs.
-            LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
-            LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
-        }
-
-        private void OnLocaleChanged(Locale locale)
+        private void OnLanguageChanged(Locale locale)
         {
             ApplyAll(locale);
         }
 
-        private void ApplyAll(Locale locale = null)
+        private void ApplyAll(Locale locale)
         {
             foreach (LocalizeStringEvent text in GetComponentsInChildren<LocalizeStringEvent>(true))
             {
