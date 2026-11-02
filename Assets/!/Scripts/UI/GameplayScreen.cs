@@ -389,7 +389,7 @@ namespace NumberMerge.UI
         {
             yield return _boardView.PlayDestruction(destruction);
 
-            // Save the playable board before anything else, so onComplete (which spends a revive) runs after it.
+            // Save the playable board before anything else, so onComplete runs after it.
             SaveProgress();
 
             // Merges from the solve count as normal merges: they show the combo result like a move does.
@@ -404,7 +404,8 @@ namespace NumberMerge.UI
             onComplete?.Invoke();
         }
 
-        // The Continue button on the game over screen. The screen has already faded out when this runs.
+        // Runs after the game over screen has faded out. Reached only once the rewarded ad has been granted
+        // (or from the debug key).
         private void OnContinueConfirmed()
         {
             bool freeRevive = _debugFreeRevive;
@@ -412,6 +413,8 @@ namespace NumberMerge.UI
 
             if (!freeRevive && _revives <= 0)
             {
+                // No revive left: show the game over screen again instead of leaving the player with no way forward.
+                _gameOverScreen.Show(_controller.CurrentScore, _controller.Record, _revives);
                 return;
             }
 
@@ -419,7 +422,7 @@ namespace NumberMerge.UI
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        // Debug key (F11): runs the revive from the game over screen without spending a revive.
+        // Debug key (F11): runs the revive from the game over screen without watching an ad or spending a revive.
         private void DebugRevive()
         {
             if (_controller == null || !_controller.IsGameOver || _isAnimating || _gameOverScreen == null)
@@ -428,7 +431,7 @@ namespace NumberMerge.UI
                 return;
             }
 
-            Debug.Log("[Debug] F11 revive (no revive spent).", this);
+            Debug.Log("[Debug] F11 revive (no ad, no revive spent).", this);
             _debugFreeRevive = true;
             _gameOverScreen.TriggerContinue();
         }

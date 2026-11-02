@@ -9,11 +9,16 @@ namespace NumberMerge.Ads
     // Setup: https://docs.unity.com/en-us/grow/levelplay/sdk/unity/package-integration
     public sealed class AdsManager : MonoBehaviour
     {
+        private const string LogPrefix = "[Ads] ";
+
         [Tooltip("App Key from the LevelPlay platform.")]
         [SerializeField] private string _appKey = "";
 
         [Tooltip("Optional user ID. Used by Ad Quality User Journey and server-to-server rewards.")]
         [SerializeField] private string _userId = "";
+
+        [Tooltip("Rewarded Video Ad Unit ID from the LevelPlay dashboard.")]
+        [SerializeField] private string _rewardedAdUnitId = "287zkhtwhpg6cgee";
 
         [SerializeField] private bool _initializeOnStart = true;
 
@@ -26,6 +31,9 @@ namespace NumberMerge.Ads
 
         public bool IsInitialized { get; private set; }
 
+        // Null until the SDK reports OnInitSuccess.
+        public RewardedAdService Rewarded { get; private set; }
+
         public event Action InitSucceeded;
         public event Action<string> InitFailed;
 
@@ -33,6 +41,7 @@ namespace NumberMerge.Ads
         {
             if (Instance != null && Instance != this)
             {
+                Log("Duplicate AdsManager destroyed.");
                 Destroy(gameObject);
                 return;
             }
@@ -43,6 +52,7 @@ namespace NumberMerge.Ads
             // Listeners must be registered before Init so no callback is missed.
             LevelPlay.OnInitSuccess += HandleInitSuccess;
             LevelPlay.OnInitFailed += HandleInitFailed;
+            Log("AdsManager awake. Init on start: " + _initializeOnStart + ", test suite: " + _enableTestSuite + ".");
         }
 
         private void Start()
@@ -51,12 +61,19 @@ namespace NumberMerge.Ads
             {
                 Initialize();
             }
+            else
+            {
+                Log("Init skipped: _initializeOnStart is off. Call Initialize() manually.");
+            }
         }
 
         private void OnDestroy()
         {
             LevelPlay.OnInitSuccess -= HandleInitSuccess;
             LevelPlay.OnInitFailed -= HandleInitFailed;
+
+            Rewarded?.Dispose();
+            Rewarded = null;
 
             if (Instance == this)
             {
@@ -67,38 +84,56 @@ namespace NumberMerge.Ads
         // Safe to call again after a failure (for example, once the network is back).
         public void Initialize()
         {
-            if (IsInitialized || _initRequested)
+            if (IsInitialized)
             {
+                Log("Init skipped: already initialized.");
+                return;
+            }
+
+            if (_initRequested)
+            {
+                Log("Init skipped: an init request is already in progress.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_appKey))
             {
-                Debug.LogError("AdsManager has no LevelPlay App Key assigned; ads will not initialize.", this);
+                LogError("No LevelPlay App Key assigned; ads will not initialize.");
                 return;
             }
 
             _initRequested = true;
+            Log("Init requested. Internet: " + Application.internetReachability + ".");
 
             if (_enableTestSuite && Debug.isDebugBuild)
             {
                 // Metadata must be set before Init.
                 LevelPlay.SetMetaData("is_test_suite", "enable");
+                Log("Test suite metadata set (debug build).");
             }
 
             string userId = string.IsNullOrWhiteSpace(_userId) ? null : _userId;
             LevelPlay.Init(_appKey, userId);
+            Log("LevelPlay.Init called. Waiting for SDK callback.");
         }
 
         private void HandleInitSuccess(LevelPlayConfiguration configuration)
         {
             _initRequested = false;
             IsInitialized = true;
-            Debug.Log("LevelPlay initialized.", this);
+            Log("Init succeeded.");
 
             if (_enableTestSuite && Debug.isDebugBuild)
             {
                 LevelPlay.LaunchTestSuite();
+                Log("Test suite launched.");
+            }
+
+            // Rewarded ad objects must be created after OnInitSuccess.
+            if (Rewarded == null)
+            {
+                Rewarded = new RewardedAdService(this, _rewardedAdUnitId);
+                Log("Rewarded service created for ad unit " + _rewardedAdUnitId + ".");
             }
 
             InitSucceeded?.Invoke();
@@ -110,9 +145,24 @@ namespace NumberMerge.Ads
             IsInitialized = false;
 
             string message = error != null ? error.ErrorMessage : "Unknown error";
-            Debug.LogWarning("LevelPlay initialization failed: " + message, this);
+            LogWarning("Init failed: " + message + ". Ads are unavailable until Initialize() succeeds.");
 
             InitFailed?.Invoke(message);
+        }
+
+        private static void Log(string message)
+        {
+            Debug.Log(LogPrefix + message);
+        }
+
+        private static void LogWarning(string message)
+        {
+            Debug.LogWarning(LogPrefix + message);
+        }
+
+        private static void LogError(string message)
+        {
+            Debug.LogError(LogPrefix + message);
         }
     }
 }
