@@ -57,6 +57,7 @@ namespace NumberMerge.Ads
 
         private void Start()
         {
+
             if (_initializeOnStart)
             {
                 Initialize();
@@ -104,6 +105,11 @@ namespace NumberMerge.Ads
 
             _initRequested = true;
             Log("Init requested. Internet: " + Application.internetReachability + ".");
+
+            // The SDK can report success synchronously (the Editor does), so the listeners must be
+            // registered right before Init. The SDK ignores duplicate registrations.
+            LevelPlay.OnInitSuccess += HandleInitSuccess;
+            LevelPlay.OnInitFailed += HandleInitFailed;
 
             if (_enableTestSuite && Debug.isDebugBuild)
             {
