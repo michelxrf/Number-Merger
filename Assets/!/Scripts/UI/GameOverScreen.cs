@@ -3,6 +3,7 @@ using NumberMerge.Ads;
 using NumberMerge.Audio;
 using NumberMerge.Save;
 using UnityEngine;
+using UnityEngine.Localization.Components;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
@@ -18,6 +19,10 @@ namespace NumberMerge.UI
         [SerializeField] private RectTransform _panel;
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _recordText;
+        [Tooltip("Localized event on the score text. Its argument is the formatted score.")]
+        [SerializeField] private LocalizeStringEvent _scoreLocalize;
+        [Tooltip("Localized event on the record text. Its argument is the formatted record.")]
+        [SerializeField] private LocalizeStringEvent _recordLocalize;
         [Tooltip("New Game (\"Novo Jogo\"): starts over with a new board.")]
         [SerializeField] private Button _restartButton;
         [Tooltip("Continue (\"Reviver\"): watches a rewarded ad. The revive runs only if the reward is granted. " +
@@ -73,8 +78,8 @@ namespace NumberMerge.UI
 
         public void Show(long score, long record, int revives)
         {
-            _scoreText.text = "Pontos: " + ScoreFormatter.Format(score);
-            _recordText.text = "Recorde: " + ScoreFormatter.Format(record);
+            UiText.SetKey(_scoreLocalize, "score.points", ScoreFormatter.Format(score));
+            UiText.SetKey(_recordLocalize, "score.record", ScoreFormatter.Format(record));
 
             _revives = revives;
             _isBusy = false;

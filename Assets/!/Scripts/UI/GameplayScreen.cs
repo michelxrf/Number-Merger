@@ -8,6 +8,7 @@ using NumberMerge.Save;
 using UnityEngine;
 using TMPro;
 using UnityEngine.EventSystems;
+using UnityEngine.Localization.Components;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -24,6 +25,12 @@ namespace NumberMerge.UI
         [Tooltip("Pulse played on the record text every time the record goes up.")]
         [SerializeField] private ScorePulse _recordPulse;
         [SerializeField] private TMP_Text _statusText;
+        [Tooltip("Localized event on the status text. Its key is changed for each status message.")]
+        [SerializeField] private LocalizeStringEvent _statusLocalize;
+        [Tooltip("Localized event on the score text. Its argument is the formatted score.")]
+        [SerializeField] private LocalizeStringEvent _scoreLocalize;
+        [Tooltip("Localized event on the record text. Its argument is the formatted record.")]
+        [SerializeField] private LocalizeStringEvent _recordLocalize;
         [SerializeField] private GameOverScreen _gameOverScreen;
         [SerializeField] private ComboResultScreen _comboResultScreen;
         [Tooltip("Balance asset for piece generation and merge rules (including the merge ceiling). Must be assigned.")]
@@ -236,7 +243,7 @@ namespace NumberMerge.UI
             _queueView.Advance(_pieces.Next);
 
             _isAnimating = true;
-            _statusText.text = "Resolvendo...";
+            UiText.SetKey(_statusLocalize, "status.resolving");
             StartCoroutine(AnimateMove(move, column));
             return true;
         }
@@ -253,7 +260,7 @@ namespace NumberMerge.UI
             _previewColumn = -1;
             _queueView.BeginPreview();
             UpdatePreview(screenPosition);
-            _statusText.text = "Solte para inserir";
+            UiText.SetKey(_statusLocalize, "status.release_to_drop");
         }
 
         // True when the press must not start a drop: it hits a button (the topmost UI element is a Selectable),
@@ -344,7 +351,7 @@ namespace NumberMerge.UI
             if (!PlayColumn(column))
             {
                 _queueView.CancelPreview();
-                _statusText.text = "Coluna cheia";
+                UiText.SetKey(_statusLocalize, "status.column_full");
             }
         }
 
@@ -395,7 +402,7 @@ namespace NumberMerge.UI
 
             _isAnimating = true;
             _statusText.gameObject.SetActive(true);
-            _statusText.text = "Resolvendo...";
+            UiText.SetKey(_statusLocalize, "status.resolving");
             StartCoroutine(AnimateDestruction(destruction, onComplete));
             return true;
         }
@@ -511,8 +518,8 @@ namespace NumberMerge.UI
             long score = _controller.CurrentScore;
             long record = _controller.Record;
 
-            _recordText.text = "Recorde: " + ScoreFormatter.Format(record);
-            _scoreText.text = "Pontos: " + ScoreFormatter.Format(score);
+            UiText.SetKey(_recordLocalize, "score.record", ScoreFormatter.Format(record));
+            UiText.SetKey(_scoreLocalize, "score.points", ScoreFormatter.Format(score));
 
             // The first refresh (scene load) shows the values without pulsing; later increases pulse their own text.
             if (_hasShownScore)
@@ -539,7 +546,7 @@ namespace NumberMerge.UI
                 return;
             }
 
-            _statusText.text = "Toque e arraste para escolher a coluna";
+            UiText.SetKey(_statusLocalize, "status.drag_to_choose_column");
         }
     }
 }

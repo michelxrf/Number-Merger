@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: UI Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: UI
+  m_TableCollectionNameGuidString: 855fb3568b3f12a48bb204b0086804d1
+  m_Entries:
+  - m_Id: 1636282368
+    m_Key: status.resolving
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1665642496
+    m_Key: status.release_to_drop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836800
+    m_Key: status.column_full
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836801
+    m_Key: status.drag_to_choose_column
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836802
+    m_Key: score.points
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836803
+    m_Key: score.record
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836804
+    m_Key: queue.next
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836805
+    m_Key: game_over.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836806
+    m_Key: pause.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836807
+    m_Key: button.new_game
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1669836808
+    m_Key: button.continue
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 6920810032176562313
+  references:
+    version: 2
+    RefIds:
+    - rid: 6920810032176562313
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1793642065235
