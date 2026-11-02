@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace NumberMerge.UI
@@ -12,6 +13,15 @@ namespace NumberMerge.UI
         [SerializeField] private float _previewDuration = 0.12f;
         [SerializeField] private float _shiftDuration = 0.3f;
 
+        [Tooltip("\"Next\" label shown above the next piece.")]
+        [SerializeField] private RectTransform _nextLabel;
+        [Tooltip("Vertical gap between the top of the next piece and the label.")]
+        [SerializeField] private float _nextLabelGap = 12f;
+        [Tooltip("Time in seconds for the next piece to scale up from 0 to its next scale.")]
+        [SerializeField] private float _nextTileScaleDuration = 0.35f;
+        [SerializeField] private LeanTweenType _nextTileEase = LeanTweenType.easeInCubic;
+
+        private TMP_Text _nextLabelText;
         private TileView _currentTile;
         private TileView _nextTile;
         private RectTransform _currentRect;
@@ -30,6 +40,8 @@ namespace NumberMerge.UI
 
             CreateCurrent(currentValue);
             CreateNext(nextValue);
+            ShowNextLabel();
+            PlayNextTileScaleUp();
 
             _initialized = true;
         }
@@ -118,6 +130,7 @@ namespace NumberMerge.UI
             _nextTile = CreateTile(newNextValue, _nextPosition, _nextScale, "QueueNext");
             if (_nextTile == null)
             {
+                HideNextLabel();
                 return;
             }
 
@@ -125,6 +138,61 @@ namespace NumberMerge.UI
             _nextRect = _nextTile.GetComponent<RectTransform>();
             _nextTile.SetAlpha(1f);
             _nextTile.SetScale(_nextScale);
+
+            ShowNextLabel();
+            PlayNextTileScaleUp();
+        }
+
+        // Plays the ease-in scale-up on the next piece tile itself.
+        private void PlayNextTileScaleUp()
+        {
+            if (_nextTile == null)
+            {
+                return;
+            }
+
+            LeanTween.cancel(_nextTile.gameObject);
+            _nextTile.transform.localScale = Vector3.zero;
+            LeanTween.scale(_nextTile.gameObject, Vector3.one * _nextScale, _nextTileScaleDuration)
+                .setEase(_nextTileEase);
+        }
+
+        // Places the "Next" label above the next piece.
+        private void ShowNextLabel()
+        {
+            if (_nextLabel == null)
+            {
+                return;
+            }
+
+            float halfSize = _cellSize * _nextScale * 0.5f;
+            _nextLabel.anchorMin = new Vector2(0.5f, 0.5f);
+            _nextLabel.anchorMax = new Vector2(0.5f, 0.5f);
+            _nextLabel.pivot = new Vector2(0.5f, 0f);
+            _nextLabel.anchoredPosition = _nextPosition + new Vector2(0f, halfSize + _nextLabelGap);
+            _nextLabel.SetAsLastSibling();
+
+            if (_nextLabelText == null)
+            {
+                _nextLabelText = _nextLabel.GetComponent<TMP_Text>();
+            }
+
+            if (_nextLabelText != null && _theme != null)
+            {
+                _nextLabelText.color = _theme.TextColor;
+            }
+
+            _nextLabel.gameObject.SetActive(true);
+        }
+
+        private void HideNextLabel()
+        {
+            if (_nextLabel == null)
+            {
+                return;
+            }
+
+            _nextLabel.gameObject.SetActive(false);
         }
 
         private void CreateCurrent(int value)
@@ -186,6 +254,7 @@ namespace NumberMerge.UI
             {
                 LeanTween.cancel(_nextTile.gameObject);
             }
+
         }
     }
 }

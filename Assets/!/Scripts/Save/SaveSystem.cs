@@ -12,9 +12,31 @@ namespace NumberMerge.Save
         private const string RecordKey = "NumberMerge.Record";
         private const string BoardKey = "NumberMerge.Board";
         private const string RevivesKey = "NumberMerge.Revives";
+        private const string VolumeKeyPrefix = "NumberMerge.Volume.";
 
         // Revives a player starts a new game with (and has on a fresh install).
         public const int DefaultRevives = 1;
+
+        // Audio volume (0..1) per channel. Returns false when the player has never changed it.
+        public static bool TryLoadVolume(string channelName, out float volume)
+        {
+            string key = VolumeKeyPrefix + channelName;
+
+            if (!PlayerPrefs.HasKey(key))
+            {
+                volume = 1f;
+                return false;
+            }
+
+            volume = Mathf.Clamp01(PlayerPrefs.GetFloat(key, 1f));
+            return true;
+        }
+
+        public static void SaveVolume(string channelName, float volume)
+        {
+            PlayerPrefs.SetFloat(VolumeKeyPrefix + channelName, Mathf.Clamp01(volume));
+            PlayerPrefs.Save();
+        }
 
         public static long LoadRecord()
         {

@@ -27,8 +27,12 @@ namespace NumberMerge.UI
 
             if (theme == null)
             {
+                _label.enabled = true;
                 return;
             }
+
+            // The highest tiles show only their sprite, with the text component disabled.
+            _label.enabled = theme.ShowsTileText(value);
 
             // The sprite carries the color, so the image stays white to show it unchanged.
             _background.sprite = theme.GetPieceSprite(value);

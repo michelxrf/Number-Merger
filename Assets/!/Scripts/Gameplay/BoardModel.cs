@@ -199,6 +199,13 @@ namespace NumberMerge.Gameplay
 
         public bool ApplyGravity()
         {
+            return ApplyGravity(null);
+        }
+
+        // movedTo, when not null, is cleared and then filled with the new position of every piece gravity moved.
+        public bool ApplyGravity(List<BoardPosition> movedTo)
+        {
+            movedTo?.Clear();
             bool moved = false;
 
             for (int column = 0; column < ColumnCount; column++)
@@ -217,6 +224,7 @@ namespace NumberMerge.Gameplay
                         _tiles[writeRow, column] = _tiles[readRow, column];
                         _tiles[readRow, column] = EmptyValue;
                         moved = true;
+                        movedTo?.Add(new BoardPosition(column, writeRow));
                     }
 
                     writeRow++;

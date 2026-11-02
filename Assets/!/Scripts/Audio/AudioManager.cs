@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NumberMerge.Save;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -57,6 +58,12 @@ namespace NumberMerge.Audio
             }
 
             PlayMusic();
+        }
+
+        // Runs after every Awake, so the saved volumes are not overwritten by the mixer's defaults.
+        private void Start()
+        {
+            LoadSavedVolumes();
         }
 
         private void OnDestroy()
@@ -174,13 +181,31 @@ namespace NumberMerge.Audio
             }
         }
 
-        // linearVolume is clamped to 0..1 and converted to decibels for the mixer.
+        // linearVolume is clamped to 0..1, converted to decibels for the mixer, and saved to PlayerPrefs.
         public void SetVolume(AudioChannel channel, float linearVolume)
         {
-            string parameter = GetParameter(channel);
-            float decibels = ToDecibels(Mathf.Clamp01(linearVolume));
+            float volume = Mathf.Clamp01(linearVolume);
+            ApplyVolume(channel, volume);
+            SaveSystem.SaveVolume(channel.ToString(), volume);
+        }
 
-            if (!_mixer.SetFloat(parameter, decibels))
+        // Applies the volume saved by the player. Channels never changed keep the mixer's default.
+        private void LoadSavedVolumes()
+        {
+            foreach (AudioChannel channel in System.Enum.GetValues(typeof(AudioChannel)))
+            {
+                if (SaveSystem.TryLoadVolume(channel.ToString(), out float volume))
+                {
+                    ApplyVolume(channel, volume);
+                }
+            }
+        }
+
+        private void ApplyVolume(AudioChannel channel, float linearVolume)
+        {
+            string parameter = GetParameter(channel);
+
+            if (!_mixer.SetFloat(parameter, ToDecibels(linearVolume)))
             {
                 Debug.LogError("AudioMixer does not expose parameter '" + parameter + "'.", this);
             }

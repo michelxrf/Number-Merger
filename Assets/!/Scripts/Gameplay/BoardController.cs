@@ -76,7 +76,7 @@ namespace NumberMerge.Gameplay
             }
 
             BoardSnapshot afterInsertion = BoardSnapshot.Capture(Board);
-            CascadeResult cascade = _cascadeResolver.Resolve(Board);
+            CascadeResult cascade = _cascadeResolver.Resolve(Board, new[] { new BoardPosition(column, insertedRow) });
             CommitCascade(cascade);
             move = new MoveResult(before, afterInsertion, column, value, insertedRow, cascade);
             return true;

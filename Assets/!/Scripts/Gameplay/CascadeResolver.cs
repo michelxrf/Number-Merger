@@ -30,12 +30,28 @@ namespace NumberMerge.Gameplay
 
         public CascadeResult Resolve(BoardModel board)
         {
+            return Resolve(board, null);
+        }
+
+        // placed: positions of the pieces the player just put on the board. They count as "just moved in",
+        // so the first merge starts from them when possible. They must be valid after the initial gravity.
+        public CascadeResult Resolve(BoardModel board, IReadOnlyList<BoardPosition> placed)
+        {
             if (board == null)
             {
                 throw new ArgumentNullException(nameof(board));
             }
 
-            board.ApplyGravity();
+            // Pieces moved by the most recent gravity (plus placed pieces for the first merge).
+            // The next merge starts from one of them when possible.
+            var movedByGravity = new List<BoardPosition>();
+
+            board.ApplyGravity(movedByGravity);
+            if (placed != null)
+            {
+                movedByGravity.AddRange(placed);
+            }
+
             BoardSnapshot afterInitialGravity = BoardSnapshot.Capture(board);
 
             var merges = new List<MergeOutcome>();
@@ -56,7 +72,7 @@ namespace NumberMerge.Gameplay
 
                 BoardSnapshot before = BoardSnapshot.Capture(board);
                 int piecesBefore = CountPieces(board);
-                if (!_mergeResolver.TryResolveOnce(board, out MergeOutcome merge))
+                if (!_mergeResolver.TryResolveOnce(board, movedByGravity, out MergeOutcome merge))
                 {
                     break;
                 }
@@ -84,7 +100,7 @@ namespace NumberMerge.Gameplay
                         ". Board: " + BuildSnapshot(board));
                 }
 
-                board.ApplyGravity();
+                board.ApplyGravity(movedByGravity);
                 BoardSnapshot afterGravity = BoardSnapshot.Capture(board);
 
                 string snapshot = BuildSnapshot(board);

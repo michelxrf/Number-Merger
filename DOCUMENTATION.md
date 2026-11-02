@@ -504,18 +504,19 @@ Arquivos: `MergeMath.cs`, `MergeResolver.cs`
 1. Percorre todas as células com valor.
 2. Coleta vizinhos ortogonais iguais.
 3. Ignora candidatos cujo resultado não é válido.
-4. Usa a maior prioridade (número de vizinhos) disponível.
-5. Sorteia um candidato da prioridade (`IRandomSource`).
-6. Aplica o resultado na origem e remove os vizinhos.
+4. Se alguma peça recém-chegada (peça jogada ou peça movida pela última gravidade) inicia uma combinação válida, considera só essas combinações. Caso contrário, considera todas. Assim, o resultado sempre fica na coluna e na linha dessa peça.
+5. Usa a maior prioridade (número de vizinhos) disponível.
+6. Sorteia um candidato da prioridade (`IRandomSource`).
+7. Aplica o resultado na origem e remove os vizinhos.
 
 ### 9.5 Cascatas
 
 Arquivo: `CascadeResolver.cs`
 
-1. Aplica gravidade inicial e captura o snapshot correspondente.
+1. Aplica gravidade inicial e captura o snapshot correspondente. A peça jogada (`BoardController.TryPlay`) é passada como peça recém-chegada para a primeira combinação.
 2. Resolve uma combinação por vez.
 3. Verifica progresso: a quantidade de peças deve cair exatamente em `participantes − 1`; caso contrário, lança exceção.
-4. Aplica gravidade.
+4. Aplica gravidade e guarda as peças que ela moveu; a próxima combinação começa por elas, quando possível.
 5. Detecta ciclos por snapshot textual (lança exceção se o tabuleiro se repetir).
 6. Limita a execução a `10000` etapas (`DefaultMaxSteps`).
 7. Retorna `CascadeResult` com todas as etapas.

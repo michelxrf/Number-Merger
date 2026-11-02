@@ -24,6 +24,14 @@ namespace NumberMerge.Gameplay
 
         public bool TryResolveOnce(BoardModel board, out MergeOutcome outcome)
         {
+            return TryResolveOnce(board, null, out outcome);
+        }
+
+        // movedPieces: positions of the pieces that the last gravity moved. If any of them starts a valid merge,
+        // one of those merges is applied first (highest neighbour count among them, random on ties).
+        // Otherwise the normal order applies: highest neighbour count first, random on ties.
+        public bool TryResolveOnce(BoardModel board, IReadOnlyList<BoardPosition> movedPieces, out MergeOutcome outcome)
+        {
             if (board == null)
             {
                 throw new ArgumentNullException(nameof(board));
@@ -31,6 +39,20 @@ namespace NumberMerge.Gameplay
 
             outcome = null;
             List<MergeOutcome> candidates = FindCandidates(board, out int highestPriority);
+
+            if (movedPieces != null && movedPieces.Count > 0)
+            {
+                List<MergeOutcome> movedCandidates = FilterByOrigin(candidates, movedPieces);
+                if (movedCandidates.Count > 0)
+                {
+                    candidates = movedCandidates;
+                    highestPriority = 0;
+                    for (int i = 0; i < candidates.Count; i++)
+                    {
+                        highestPriority = Math.Max(highestPriority, candidates[i].NeighborCount);
+                    }
+                }
+            }
 
             for (int priority = highestPriority; priority >= 1; priority--)
             {
@@ -119,6 +141,27 @@ namespace NumberMerge.Gameplay
             {
                 neighbors.Add(new BoardPosition(column, row));
             }
+        }
+
+        private static List<MergeOutcome> FilterByOrigin(List<MergeOutcome> candidates, IReadOnlyList<BoardPosition> origins)
+        {
+            var filtered = new List<MergeOutcome>();
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                BoardPosition origin = candidates[i].Origin;
+
+                for (int j = 0; j < origins.Count; j++)
+                {
+                    if (origins[j].Column == origin.Column && origins[j].Row == origin.Row)
+                    {
+                        filtered.Add(candidates[i]);
+                        break;
+                    }
+                }
+            }
+
+            return filtered;
         }
 
         private static List<MergeOutcome> FilterByPriority(List<MergeOutcome> candidates, int priority)

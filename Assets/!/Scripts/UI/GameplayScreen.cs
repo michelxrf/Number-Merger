@@ -7,7 +7,9 @@ using NumberMerge.Managers;
 using NumberMerge.Save;
 using UnityEngine;
 using TMPro;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace NumberMerge.UI
 {
@@ -241,8 +243,8 @@ namespace NumberMerge.UI
 
         private void BeginPreview(Vector2 screenPosition)
         {
-            // Presses outside the board (e.g. the pause button) must not start a drop.
-            if (!RectTransformUtility.RectangleContainsScreenPoint(_boardRect, screenPosition, null))
+            // Presses on a button (e.g. the pause button) must not start a drop. Anywhere else on the screen can.
+            if (IsPressOnButton(screenPosition))
             {
                 return;
             }
@@ -252,6 +254,24 @@ namespace NumberMerge.UI
             _queueView.BeginPreview();
             UpdatePreview(screenPosition);
             _statusText.text = "Solte para inserir";
+        }
+
+        // True when the topmost UI element under the pointer is a Selectable (Button, Slider, ...).
+        private static bool IsPressOnButton(Vector2 screenPosition)
+        {
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                return false;
+            }
+
+            var eventData = new PointerEventData(eventSystem) { position = screenPosition };
+            var results = new List<RaycastResult>();
+            eventSystem.RaycastAll(eventData, results);
+
+            // Results are sorted topmost first. Only raycast-target graphics appear here, so non-interactive
+            // images (background, board, text) are ignored automatically.
+            return results.Count > 0 && results[0].gameObject.GetComponentInParent<Selectable>() != null;
         }
 
         private void UpdatePreview(Vector2 screenPosition)

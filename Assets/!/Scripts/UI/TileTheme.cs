@@ -24,6 +24,10 @@ namespace NumberMerge.UI
         [Tooltip("Sprites in increasing value order, starting at 2: index 0 = 2, 1 = 4, 2 = 8, 3 = 16, and so on.")]
         [SerializeField] private Sprite[] _pieceSprites;
 
+        [Header("Tile Text")]
+        [Tooltip("Tiles with this value or higher are drawn without text. Set it to the merge ceiling so the highest tile shows only its sprite.")]
+        [SerializeField] private int _textlessFromValue = 16384;
+
         [Header("Bad Tile")]
         [Tooltip("Sprite for bad tiles. Not used yet; reserved for later gameplay.")]
         [SerializeField] private Sprite _badTileSprite;
@@ -37,6 +41,12 @@ namespace NumberMerge.UI
         public Color InsertPreviewColor => _insertPreviewColor;
         public Color TextColor => _textColor;
         public Sprite BadTileSprite => _badTileSprite;
+
+        // False for tiles at or above the textless threshold, which are drawn as the sprite only.
+        public bool ShowsTileText(int value)
+        {
+            return value < _textlessFromValue;
+        }
 
         // Returns a random non-null background sprite, or null if none are assigned.
         public Sprite GetRandomBackgroundSprite()
