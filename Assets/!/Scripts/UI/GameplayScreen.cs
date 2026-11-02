@@ -243,8 +243,8 @@ namespace NumberMerge.UI
 
         private void BeginPreview(Vector2 screenPosition)
         {
-            // Presses on a button (e.g. the pause button) must not start a drop. Anywhere else on the screen can.
-            if (IsPressOnButton(screenPosition))
+            // Presses on a button (e.g. the pause button) or in the safe area below the board must not start a drop.
+            if (IsPressBlocked(screenPosition))
             {
                 return;
             }
@@ -256,8 +256,9 @@ namespace NumberMerge.UI
             _statusText.text = "Solte para inserir";
         }
 
-        // True when the topmost UI element under the pointer is a Selectable (Button, Slider, ...).
-        private static bool IsPressOnButton(Vector2 screenPosition)
+        // True when the press must not start a drop: it hits a button (the topmost UI element is a Selectable),
+        // or it hits a UiInputBlocker anywhere in the stack (the safe area below the board).
+        private static bool IsPressBlocked(Vector2 screenPosition)
         {
             EventSystem eventSystem = EventSystem.current;
             if (eventSystem == null)
@@ -271,7 +272,21 @@ namespace NumberMerge.UI
 
             // Results are sorted topmost first. Only raycast-target graphics appear here, so non-interactive
             // images (background, board, text) are ignored automatically.
-            return results.Count > 0 && results[0].gameObject.GetComponentInParent<Selectable>() != null;
+            if (results.Count > 0 && results[0].gameObject.GetComponentInParent<Selectable>() != null)
+            {
+                return true;
+            }
+
+            // The safe area can be covered by other raycast-target graphics (e.g. the status bar), so search all hits.
+            for (int i = 0; i < results.Count; i++)
+            {
+                if (results[i].gameObject.GetComponentInParent<UiInputBlocker>() != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void UpdatePreview(Vector2 screenPosition)
