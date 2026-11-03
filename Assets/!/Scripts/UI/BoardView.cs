@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using NumberMerge.Audio;
@@ -33,6 +34,9 @@ namespace NumberMerge.UI
         private float _punchScale = 1.2f;
         private float _petalEmitterScale = 0.2f;
         private bool _configLoaded;
+
+        // Raised when a merge's result appears on the board, once per merge. The merge's points are scored by then.
+        public event Action<MergeOutcome> MergeCompleted;
 
         private readonly List<TileView> _spawnedTiles = new List<TileView>();
         private TileView[,] _tileGrid;
@@ -642,6 +646,9 @@ namespace NumberMerge.UI
                 merge.ResultValue,
                 merge.Origin.Row,
                 false);
+
+            // Raised even when the result tile could not be created, so every merge's points are always reported.
+            MergeCompleted?.Invoke(merge);
 
             if (result == null)
             {

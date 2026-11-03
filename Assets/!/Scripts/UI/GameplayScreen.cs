@@ -27,6 +27,14 @@ namespace NumberMerge.UI
         [SerializeField] private ScorePulse _scorePulse;
         [Tooltip("Pulse played on the record text every time the record goes up.")]
         [SerializeField] private ScorePulse _recordPulse;
+        [Tooltip("Floater prefab spawned for each merge. Flies from under the score text into it.")]
+        [SerializeField] private ScoreFloater _scoreFloaterPrefab;
+        [Tooltip("Timing and offset of the score floaters.")]
+        [SerializeField] private ScoreFloatConfig _scoreFloatConfig;
+        [Tooltip("Parent for the spawned floaters. Should be under the same Canvas as the score text, not in a layout group.")]
+        [SerializeField] private RectTransform _scoreFloatParent;
+        [Tooltip("Object whose horizontal center the floaters spawn at (the Score panel).")]
+        [SerializeField] private RectTransform _scoreFloatSpawnAnchor;
         [SerializeField] private TMP_Text _statusText;
         [Tooltip("Localized event on the status text. Its key is changed for each status message.")]
         [SerializeField] private LocalizeStringEvent _statusLocalize;
@@ -51,8 +59,9 @@ namespace NumberMerge.UI
         private bool _isPreviewing;
         private int _previewColumn = -1;
         private bool _hasShownScore;
-        private long _shownScore;
         private long _shownRecord;
+        private readonly ScoreDisplayCounter _scoreCounter = new ScoreDisplayCounter();
+        private Color _textColor = Color.white;
 
         [Tooltip("Revive balance: tiles removed per revive and the delay before the removal starts.")]
         [SerializeField] private ReviveConfig _reviveConfig;
@@ -76,6 +85,12 @@ namespace NumberMerge.UI
         private void Awake()
         {
             _boardRect = _boardView.GetComponent<RectTransform>();
+            _boardView.MergeCompleted += OnMergeCompleted;
+
+            if (_scoreFloatParent == null && _scoreText != null)
+            {
+                _scoreFloatParent = _scoreText.rectTransform.parent as RectTransform;
+            }
 
             _settings = ResolveSettings();
 
@@ -115,6 +130,14 @@ namespace NumberMerge.UI
             }
         }
 
+        private void OnDestroy()
+        {
+            if (_boardView != null)
+            {
+                _boardView.MergeCompleted -= OnMergeCompleted;
+            }
+        }
+
         // Applies the theme's text color to every text in the game (score, status, and game over screen).
         private void ApplyTextColor()
         {
@@ -124,6 +147,7 @@ namespace NumberMerge.UI
             }
 
             Color color = _theme.TextColor;
+            _textColor = color;
             _scoreText.color = color;
             _recordText.color = color;
             _statusText.color = color;
@@ -383,6 +407,7 @@ namespace NumberMerge.UI
         private IEnumerator AnimateMove(MoveResult move, int column)
         {
             yield return _boardView.PlayMove(move, _boardView.GetDropStartPosition(column));
+            yield return WaitForScoreFloaters();
 
             // Save right before the player regains control, so the saved state is the one they can act on.
             SaveProgress();
@@ -423,6 +448,7 @@ namespace NumberMerge.UI
         private IEnumerator AnimateDestruction(DestructionResult destruction, Action onComplete)
         {
             yield return _boardView.PlayDestruction(destruction);
+            yield return WaitForScoreFloaters();
 
             // Save the playable board before anything else, so onComplete runs after it.
             SaveProgress();
@@ -526,29 +552,62 @@ namespace NumberMerge.UI
                 _controller.CurrentScore));
         }
 
+        // Runs once the board animation has ended. Input stays locked until every floater has reached the score,
+        // so the score text is always exact again before the next move starts.
+        private IEnumerator WaitForScoreFloaters()
+        {
+            yield return new WaitUntil(() => _scoreCounter.Pending == 0);
+        }
+
+        // Spawns a "+N" floater for one merge. The points are counted as pending until the floater arrives.
+        private void OnMergeCompleted(MergeOutcome merge)
+        {
+            long points = merge.ResultValue;
+            _scoreCounter.AddPending(points);
+
+            if (_scoreFloaterPrefab == null || _scoreFloatConfig == null || _scoreText == null)
+            {
+                // Without a floater the points still arrive at once, so nothing waits forever.
+                ArriveScore(points);
+                return;
+            }
+
+            // The floater rises to a point a quarter of the anchor's height above its bottom edge (the center of the
+            // lower half), and starts SpawnOffset below that point.
+            RectTransform anchor = _scoreFloatSpawnAnchor != null ? _scoreFloatSpawnAnchor : _scoreText.rectTransform;
+            Rect rect = anchor.rect;
+            Vector3 target = anchor.TransformPoint(new Vector3(rect.center.x, rect.yMin + rect.height * 0.25f, 0f));
+            Vector3 start = target + anchor.TransformVector(0f, -_scoreFloatConfig.SpawnOffset, 0f);
+
+            Transform parent = _scoreFloatParent != null ? _scoreFloatParent : _scoreText.rectTransform.parent;
+            ScoreFloater floater = Instantiate(_scoreFloaterPrefab, parent);
+            floater.Play(points, _textColor, start, target, _scoreFloatConfig, () => ArriveScore(points));
+        }
+
+        // A floater reached the score: the displayed number goes up and the score text pulses.
+        private void ArriveScore(long points)
+        {
+            long displayed = _scoreCounter.Arrive(points);
+            UpdateScoreLabels(displayed, _shownRecord);
+            _scorePulse.Pulse();
+        }
+
         private void RefreshUi()
         {
             long score = _controller.CurrentScore;
             long record = _controller.Record;
 
+            // All floaters have landed (see WaitForScoreFloaters), so the displayed score is the real total.
+            _scoreCounter.SyncTo(score);
             UpdateScoreLabels(score, record);
 
-            // The first refresh (scene load) shows the values without pulsing; later increases pulse their own text.
-            if (_hasShownScore)
+            // The first refresh (scene load) shows the values without pulsing. Score pulses on each arrival instead.
+            if (_hasShownScore && record > _shownRecord)
             {
-                if (score > _shownScore)
-                {
-                    _scorePulse.Pulse();
-                }
-
-                if (record > _shownRecord)
-                {
-                    _recordPulse.Pulse();
-                }
+                _recordPulse.Pulse();
             }
 
             _hasShownScore = true;
-            _shownScore = score;
             _shownRecord = record;
 
             if (_controller.IsGameOver)
@@ -570,7 +629,7 @@ namespace NumberMerge.UI
 
         private void OnLanguageChanged(Locale locale)
         {
-            UpdateScoreLabels(_shownScore, _shownRecord);
+            UpdateScoreLabels(_scoreCounter.Displayed, _shownRecord);
         }
     }
 }

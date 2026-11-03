@@ -3744,6 +3744,10 @@ MonoBehaviour:
   _recordText: {fileID: 429692978}
   _scorePulse: {fileID: 1439333950}
   _recordPulse: {fileID: 429692981}
+  _scoreFloaterPrefab: {fileID: 3884524649599272589, guid: f81b6cc23fba71f4a8da0f64444f4b01, type: 3}
+  _scoreFloatConfig: {fileID: 11400000, guid: 271ab291f7d75af4fb01fb1baf2b3ea4, type: 2}
+  _scoreFloatParent: {fileID: 1191976506}
+  _scoreFloatSpawnAnchor: {fileID: 1439972003}
   _statusText: {fileID: 353859811}
   _statusLocalize: {fileID: 353859812}
   _scoreLocalize: {fileID: 1439333951}
