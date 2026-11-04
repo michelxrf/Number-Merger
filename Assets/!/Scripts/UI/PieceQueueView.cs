@@ -157,7 +157,7 @@ namespace NumberMerge.UI
                 .setEase(_nextTileEase);
         }
 
-        // Places the "Next" label above the next piece.
+        // Places the "Next" label root (text + background children) above the next piece.
         private void ShowNextLabel()
         {
             if (_nextLabel == null)
@@ -174,7 +174,8 @@ namespace NumberMerge.UI
 
             if (_nextLabelText == null)
             {
-                _nextLabelText = _nextLabel.GetComponent<TMP_Text>();
+                // Text lives on a child (alongside the background), so search the hierarchy.
+                _nextLabelText = _nextLabel.GetComponentInChildren<TMP_Text>(true);
             }
 
             if (_nextLabelText != null && _theme != null)
