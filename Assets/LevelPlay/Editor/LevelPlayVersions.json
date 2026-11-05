@@ -3337,6 +3337,17 @@
       "dependencyXmlFileName": "ISMobileFuseAdapterDependencies.xml",
       "SKAdNetworkIdXmlURL": "https://s3.amazonaws.com/ssa.public/Unity/SKAdNetwork-IDs/All/skadnetworks.mobilefuse.plist.xml",
       "versions": {
+        "5.9.0.0": {
+          "ironSourceSdkVersion": "[9.0.0, 10.0[",
+          "android": {
+            "adapterVersion": "5.7.0",
+            "adNetworkVersion": "1.13.1"
+          },
+          "ios": {
+            "adapterVersion": "5.6.0.0",
+            "adNetworkVersion": "1.13.0"
+          }
+        },
         "5.8.0.0": {
           "ironSourceSdkVersion": "[9.0.0, 10.0[",
           "android": {
