@@ -163,6 +163,10 @@ namespace NumberMerge.UI
 
         private void Awake()
         {
+            // Apply the saved (or system) language before any text is shown. Previously this only happened
+            // when the Pause Menu's LanguageSwitcher started, so the language was wrong until it was opened.
+            LanguageManager.Initialize();
+
             _boardRect = _boardView.GetComponent<RectTransform>();
             _boardView.MergeCompleted += OnMergeCompleted;
 
@@ -559,13 +563,28 @@ namespace NumberMerge.UI
                 }
 
                 _controller.Combos.Reset();
-                _isAnimating = false;
-                RefreshUi();
             }
             finally
             {
-                // If anything above threw, the player must still regain control.
-                _isAnimating = false;
+                // Runs even if the animation threw, so the player always regains control with a correct status.
+                EndAnimation();
+            }
+        }
+
+        // Ends an animation: input unlocks and the UI is refreshed. A failing refresh is logged, not hidden,
+        // and the status falls back to the idle text so it never stays on "Resolving".
+        private void EndAnimation()
+        {
+            _isAnimating = false;
+
+            try
+            {
+                RefreshUi();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                UiText.SetKey(_statusLocalize, "status.drag_to_choose_column");
             }
         }
 
@@ -610,14 +629,13 @@ namespace NumberMerge.UI
                 }
 
                 _controller.Combos.Reset();
-                _isAnimating = false;
-                RefreshUi();
-                onComplete?.Invoke();
             }
             finally
             {
-                // If anything above threw, the player must still regain control.
-                _isAnimating = false;
+                // The tiles were already removed and the board already changed, so the removal is complete
+                // even if the animation threw. onComplete must still run to spend the use.
+                EndAnimation();
+                onComplete?.Invoke();
             }
         }
 
@@ -837,14 +855,10 @@ namespace NumberMerge.UI
             {
                 BoardSnapshot restored = BoardSnapshot.Capture(_controller.Board);
                 yield return _boardView.PlayUndo(shown, restored, UndoDuration);
-
-                _isAnimating = false;
-                RefreshUi();
             }
             finally
             {
-                // If the undo animation threw, the player must still regain control.
-                _isAnimating = false;
+                EndAnimation();
             }
         }
 
