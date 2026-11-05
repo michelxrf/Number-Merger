@@ -589,10 +589,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SplashScreen
   logo: {fileID: 1063542556}
   delayBeforeFadeIn: 0.5
-  fadeInDuration: 1
-  stayDuration: 2
-  fadeOutDuration: 1
-  delayAfterFadeOut: 0.5
+  fadeInDuration: 0.5
+  stayDuration: 1
+  fadeOutDuration: 0.5
+  delayAfterFadeOut: 0.25
   sfx: {fileID: 8300000, guid: 083ad0029993f5646af28be90ffe4e95, type: 3}
   gameplaySceneName: Gameplay
 --- !u!82 &1139175772

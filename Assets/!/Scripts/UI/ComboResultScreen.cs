@@ -1,5 +1,6 @@
 using System.Collections;
 using NumberMerge.Audio;
+using NumberMerge.Managers;
 using TMPro;
 using UnityEngine;
 
@@ -58,6 +59,7 @@ namespace NumberMerge.UI
             }
 
             AudioManager.Instance?.PlayComboSfx(_config.GetComboPitch(comboCount));
+            Haptics.Vibrate(_config.GetVibrationDuration(comboCount));
             _sequence = StartCoroutine(RunSequence());
         }
 

@@ -107,6 +107,10 @@ namespace NumberMerge.UI
         [SerializeField] private GameObject _undoAdIcon;
         [Tooltip("Ad icon shown on the Destroy button when its uses are empty (a copy of the Game Over ad icon).")]
         [SerializeField] private GameObject _destroyAdIcon;
+        [Tooltip("Recharge feedback (petals and scale punch) on the Undo button.")]
+        [SerializeField] private PowerupRechargeFeedback _undoRechargeFeedback;
+        [Tooltip("Recharge feedback (petals and scale punch) on the Destroy button.")]
+        [SerializeField] private PowerupRechargeFeedback _destroyRechargeFeedback;
 
         // Tile insertions since the last rewarded recharge, shared by Undo and Destroy. Saved with the board.
         private int _movesSinceRecharge;
@@ -118,6 +122,10 @@ namespace NumberMerge.UI
         }
 
         private int RechargeMoves => _rechargeConfig != null ? _rechargeConfig.MovesPerRecharge : RechargeConfig.DefaultMovesPerRecharge;
+        private float RechargeFeedbackDelay => _rechargeConfig != null ? _rechargeConfig.FeedbackDelay : RechargeConfig.DefaultFeedbackDelay;
+        private float RechargePetalEmitterScale => _rechargeConfig != null ? _rechargeConfig.PetalEmitterScale : RechargeConfig.DefaultPetalEmitterScale;
+        private float RechargePunchScale => _rechargeConfig != null ? _rechargeConfig.PunchScale : RechargeConfig.DefaultPunchScale;
+        private float RechargePunchDuration => _rechargeConfig != null ? _rechargeConfig.PunchDuration : RechargeConfig.DefaultPunchDuration;
 
         // True while a rewarded ad is on screen (including the grace period after it closes).
         private bool IsAdShowing => AdsManager.Instance != null &&
@@ -890,7 +898,31 @@ namespace NumberMerge.UI
             }
 
             RewardedAdService rewarded = AdsManager.Instance.Rewarded;
-            rewarded.TryShow(onRewarded: () => Recharge(powerup), onFailed: null);
+            rewarded.TryShow(
+                onRewarded: () =>
+                {
+                    Recharge(powerup);
+                    StartCoroutine(PlayRechargeFeedback(powerup));
+                },
+                onFailed: null);
+        }
+
+        // Waits for the rewarded ad to close (the grace period after close included), then the configured delay,
+        // then plays the petals and scale punch on the recharged button.
+        private IEnumerator PlayRechargeFeedback(Powerup powerup)
+        {
+            while (IsAdShowing)
+            {
+                yield return null;
+            }
+
+            yield return new WaitForSecondsRealtime(RechargeFeedbackDelay);
+
+            PowerupRechargeFeedback feedback = powerup == Powerup.Undo ? _undoRechargeFeedback : _destroyRechargeFeedback;
+            if (feedback != null)
+            {
+                feedback.Play(RechargePetalEmitterScale, RechargePunchScale, RechargePunchDuration);
+            }
         }
 
         // Refills the power-up to its config value and restarts the insertion count. Saved right away.

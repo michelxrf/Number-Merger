@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37d49e4ac9aa9fe4f8a539264952c5b0, type: 3}
   m_Name: ComboResultConfig
   m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.UI.ComboResultConfig
-  _fadeInDuration: 0.5
-  _holdDuration: 1
-  _fadeOutDuration: 0.5
+  _fadeInDuration: 0.3
+  _holdDuration: 0.7
+  _fadeOutDuration: 0.3
   _startScale: 0.5
   _endScale: 1
+  _fadeInEase: 27
   _minCombosToShow: 1
   _pitchStartCount: 3
   _chainPitchGain: 0.1

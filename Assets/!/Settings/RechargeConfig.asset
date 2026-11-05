@@ -12,4 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0635d6d1749ba59458bf2fa67c58c12b, type: 3}
   m_Name: RechargeConfig
   m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.Gameplay.RechargeConfig
-  _movesPerRecharge: 20
+  _movesPerRecharge: 30
+  _feedbackDelay: 0.2
+  _petalEmitterScale: 0.2
+  _punchScale: 1.25
+  _punchDuration: 0.2

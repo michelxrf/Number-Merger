@@ -196,6 +196,16 @@ namespace NumberMerge.Ads
             _onRewarded = null;
             _onFailed = null;
             rewarded?.Invoke();
+
+            // The ad already closed and was waiting for this reward: end the show now instead of after the grace period.
+            if (_graceRoutine != null)
+            {
+                _coroutineOwner.StopCoroutine(_graceRoutine);
+                _graceRoutine = null;
+                Log("Late reward arrived after close. Ad finished early.");
+                FinishShow();
+                Load();
+            }
         }
 
         private void HandleClosed(LevelPlayAdInfo info)

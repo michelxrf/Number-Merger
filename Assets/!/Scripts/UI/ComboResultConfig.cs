@@ -24,6 +24,10 @@ namespace NumberMerge.UI
         [Tooltip("LeanTween ease used by the fade-in (alpha and scale).")]
         [SerializeField] private LeanTweenType _fadeInEase = LeanTweenType.easeOutBack;
 
+        [Header("Vibration")]
+        [Tooltip("Vibration seconds per multiplier step. Duration = this * multiplier (1x = 0.05s, 3x = 0.15s).")]
+        [SerializeField, Min(0f)] private float _vibrationPerCombo = 0.05f;
+
         [Header("Threshold")]
         [Tooltip("The screen is only shown when a move has at least this many combos.")]
         [SerializeField, Min(0)] private int _minCombosToShow = 2;
@@ -46,6 +50,13 @@ namespace NumberMerge.UI
         public int PitchStartCount => _pitchStartCount;
         public float ChainPitchGain => _chainPitchGain;
         public float MaxPitch => _maxPitch;
+        public float VibrationPerCombo => _vibrationPerCombo;
+
+        // comboCount is the raw combo count; the displayed multiplier is comboCount + 1 (see ComboResultScreen).
+        public float GetVibrationDuration(int comboCount)
+        {
+            return _vibrationPerCombo * (comboCount + 1);
+        }
 
         // 1x below PitchStartCount; each combo from there on adds ChainPitchGain, capped at MaxPitch.
         public float GetComboPitch(int comboCount)

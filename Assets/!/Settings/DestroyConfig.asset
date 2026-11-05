@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d354c91cce1eab448a72fdcf876d854, type: 3}
   m_Name: DestroyConfig
   m_EditorClassIdentifier: Assembly-CSharp::NumberMerge.Gameplay.DestroyConfig
-  _maxUses: 2
+  _maxUses: 1

@@ -22,6 +22,10 @@ namespace NumberMerge.Ads
 
         [SerializeField] private bool _initializeOnStart = true;
 
+        [Tooltip("ON: request test ads only, in every build (including shipped builds). " +
+                 "OFF: serve real ads. Applied at init, so restart the game after changing it.")]
+        [SerializeField] private bool _useTestAds = true;
+
         [Tooltip("Enables the LevelPlay integration test suite. Only applies to development builds.")]
         [SerializeField] private bool _enableTestSuite = false;
 
@@ -30,6 +34,8 @@ namespace NumberMerge.Ads
         public static AdsManager Instance { get; private set; }
 
         public bool IsInitialized { get; private set; }
+
+        public bool UseTestAds => _useTestAds;
 
         // Null until the SDK reports OnInitSuccess.
         public RewardedAdService Rewarded { get; private set; }
@@ -52,7 +58,8 @@ namespace NumberMerge.Ads
             // Listeners must be registered before Init so no callback is missed.
             LevelPlay.OnInitSuccess += HandleInitSuccess;
             LevelPlay.OnInitFailed += HandleInitFailed;
-            Log("AdsManager awake. Init on start: " + _initializeOnStart + ", test suite: " + _enableTestSuite + ".");
+            Log("AdsManager awake. Init on start: " + _initializeOnStart + ", test ads: " + _useTestAds +
+                ", test suite: " + _enableTestSuite + ".");
         }
 
         private void Start()
@@ -111,11 +118,19 @@ namespace NumberMerge.Ads
             LevelPlay.OnInitSuccess += HandleInitSuccess;
             LevelPlay.OnInitFailed += HandleInitFailed;
 
-            if (_enableTestSuite && Debug.isDebugBuild)
+            // Metadata must be set before Init. Test ads mode applies to every build; the test suite
+            // itself is still limited to debug builds.
+            bool testSuiteMetaData = _useTestAds || (_enableTestSuite && Debug.isDebugBuild);
+            if (testSuiteMetaData)
             {
-                // Metadata must be set before Init.
                 LevelPlay.SetMetaData("is_test_suite", "enable");
-                Log("Test suite metadata set (debug build).");
+                Log(_useTestAds
+                    ? "Test ads mode ON: is_test_suite metadata set (all builds)."
+                    : "Test suite metadata set (debug build).");
+            }
+            else
+            {
+                Log("Test ads mode OFF: serving real ads.");
             }
 
             string userId = string.IsNullOrWhiteSpace(_userId) ? null : _userId;
