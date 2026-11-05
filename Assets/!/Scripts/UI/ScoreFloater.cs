@@ -13,8 +13,11 @@ namespace NumberMerge.UI
 
         public void Play(long points, Color color, Vector3 from, Vector3 to, ScoreFloatConfig config, Action onArrive)
         {
-            _label.text = "+" + ScoreFormatter.Format(points);
-            _label.color = color;
+            if (_label != null)
+            {
+                _label.text = "+" + ScoreFormatter.Format(points);
+                _label.color = color;
+            }
 
             var canvasGroup = GetComponent<CanvasGroup>();
             canvasGroup.alpha = 1f;
@@ -32,8 +35,15 @@ namespace NumberMerge.UI
 
             LeanTween.delayedCall(gameObject, duration, () =>
             {
-                onArrive?.Invoke();
-                Destroy(gameObject);
+                try
+                {
+                    onArrive?.Invoke();
+                }
+                finally
+                {
+                    // Always removed, even if the arrival callback throws.
+                    Destroy(gameObject);
+                }
             });
         }
     }

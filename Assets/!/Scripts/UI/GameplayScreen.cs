@@ -65,6 +65,12 @@ namespace NumberMerge.UI
         private readonly ScoreDisplayCounter _scoreCounter = new ScoreDisplayCounter();
         private Color _textColor = Color.white;
 
+        // Longest time (scaled seconds) the game waits for score floaters before it gives up on them.
+        private const float FloaterWaitTimeout = 3f;
+
+        // Bumped when floaters are given up on, so their late arrivals are ignored.
+        private int _floaterGeneration;
+
         [Tooltip("Revive balance: tiles removed per revive and the delay before the removal starts.")]
         [SerializeField] private ReviveConfig _reviveConfig;
 
@@ -538,21 +544,29 @@ namespace NumberMerge.UI
 
         private IEnumerator AnimateMove(MoveResult move, int column)
         {
-            yield return _boardView.PlayMove(move, _boardView.GetDropStartPosition(column));
-            yield return WaitForScoreFloaters();
-
-            // Save right before the player regains control, so the saved state is the one they can act on.
-            SaveProgress();
-
-            // Combo result is shown from the count of this move, then the counter is cleared for the next move.
-            if (_comboResultScreen != null)
+            try
             {
-                _comboResultScreen.Show(_controller.Combos.Count);
-            }
+                yield return _boardView.PlayMove(move, _boardView.GetDropStartPosition(column));
+                yield return WaitForScoreFloaters();
 
-            _controller.Combos.Reset();
-            _isAnimating = false;
-            RefreshUi();
+                // Save right before the player regains control, so the saved state is the one they can act on.
+                SaveProgress();
+
+                // Combo result is shown from the count of this move, then the counter is cleared for the next move.
+                if (_comboResultScreen != null)
+                {
+                    _comboResultScreen.Show(_controller.Combos.Count);
+                }
+
+                _controller.Combos.Reset();
+                _isAnimating = false;
+                RefreshUi();
+            }
+            finally
+            {
+                // If anything above threw, the player must still regain control.
+                _isAnimating = false;
+            }
         }
 
         // Removes the given tiles at once and plays the solve that follows. Input is ignored until it ends.
@@ -581,22 +595,30 @@ namespace NumberMerge.UI
 
         private IEnumerator AnimateDestruction(DestructionResult destruction, Action onComplete)
         {
-            yield return _boardView.PlayDestruction(destruction);
-            yield return WaitForScoreFloaters();
-
-            // Save the playable board before anything else, so onComplete runs after it.
-            SaveProgress();
-
-            // Merges from the solve count as normal merges: they show the combo result like a move does.
-            if (_comboResultScreen != null)
+            try
             {
-                _comboResultScreen.Show(_controller.Combos.Count);
-            }
+                yield return _boardView.PlayDestruction(destruction);
+                yield return WaitForScoreFloaters();
 
-            _controller.Combos.Reset();
-            _isAnimating = false;
-            RefreshUi();
-            onComplete?.Invoke();
+                // Save the playable board before anything else, so onComplete runs after it.
+                SaveProgress();
+
+                // Merges from the solve count as normal merges: they show the combo result like a move does.
+                if (_comboResultScreen != null)
+                {
+                    _comboResultScreen.Show(_controller.Combos.Count);
+                }
+
+                _controller.Combos.Reset();
+                _isAnimating = false;
+                RefreshUi();
+                onComplete?.Invoke();
+            }
+            finally
+            {
+                // If anything above threw, the player must still regain control.
+                _isAnimating = false;
+            }
         }
 
         // Runs after the game over screen has faded out. Reached only once the rewarded ad has been granted
@@ -811,11 +833,19 @@ namespace NumberMerge.UI
 
         private IEnumerator AnimateUndo(BoardSnapshot shown)
         {
-            BoardSnapshot restored = BoardSnapshot.Capture(_controller.Board);
-            yield return _boardView.PlayUndo(shown, restored, UndoDuration);
+            try
+            {
+                BoardSnapshot restored = BoardSnapshot.Capture(_controller.Board);
+                yield return _boardView.PlayUndo(shown, restored, UndoDuration);
 
-            _isAnimating = false;
-            RefreshUi();
+                _isAnimating = false;
+                RefreshUi();
+            }
+            finally
+            {
+                // If the undo animation threw, the player must still regain control.
+                _isAnimating = false;
+            }
         }
 
         // Keeps both power-up buttons in step with the game: interactable state, counter, and the rewarded ad icon.
@@ -949,19 +979,35 @@ namespace NumberMerge.UI
         // so the score text is always exact again before the next move starts.
         private IEnumerator WaitForScoreFloaters()
         {
-            yield return new WaitUntil(() => _scoreCounter.Pending == 0);
+            // Uses scaled time, so the timeout does not run while the game is paused.
+            float waited = 0f;
+            while (_scoreCounter.Pending > 0 && waited < FloaterWaitTimeout)
+            {
+                waited += Time.deltaTime;
+                yield return null;
+            }
+
+            if (_scoreCounter.Pending > 0)
+            {
+                // A floater never arrived (its callback failed or never ran). Give up on it so input is not locked.
+                // Floaters from this batch that arrive later are ignored, since the score is now exact.
+                Debug.LogWarning("[GameplayScreen] Score floaters did not arrive in time; showing the real score.", this);
+                _floaterGeneration++;
+                _scoreCounter.SyncTo(_controller.CurrentScore);
+            }
         }
 
         // Spawns a "+N" floater for one merge. The points are counted as pending until the floater arrives.
         private void OnMergeCompleted(MergeOutcome merge)
         {
             long points = merge.ResultValue;
+            int generation = _floaterGeneration;
             _scoreCounter.AddPending(points);
 
             if (_scoreFloaterPrefab == null || _scoreFloatConfig == null || _scoreText == null)
             {
                 // Without a floater the points still arrive at once, so nothing waits forever.
-                ArriveScore(points);
+                ArriveScore(points, generation);
                 return;
             }
 
@@ -974,15 +1020,25 @@ namespace NumberMerge.UI
 
             Transform parent = _scoreFloatParent != null ? _scoreFloatParent : _scoreText.rectTransform.parent;
             ScoreFloater floater = Instantiate(_scoreFloaterPrefab, parent);
-            floater.Play(points, _textColor, start, target, _scoreFloatConfig, () => ArriveScore(points));
+            floater.Play(points, _textColor, start, target, _scoreFloatConfig, () => ArriveScore(points, generation));
         }
 
         // A floater reached the score: the displayed number goes up and the score text pulses.
-        private void ArriveScore(long points)
+        // Arrivals from a batch that was already given up on (older generation) are ignored.
+        private void ArriveScore(long points, int generation)
         {
+            if (generation != _floaterGeneration)
+            {
+                return;
+            }
+
             long displayed = _scoreCounter.Arrive(points);
             UpdateScoreLabels(displayed, _shownRecord);
-            _scorePulse.Pulse();
+
+            if (_scorePulse != null)
+            {
+                _scorePulse.Pulse();
+            }
         }
 
         private void RefreshUi()
