@@ -1,9 +1,9 @@
 # Number Merge — Documentação do Estado Atual
 
-> Última atualização: 2026-10-30  
+> Última atualização: 2026-11-04  
 > Projeto: `D:\Projects\Number Merger`  
 > Unity: `6000.3.10f1`  
-> Último commit incluído: `8b65171 fiddling`
+> Último commit incluído: `e1ac6ba undo and destroy with ads`
 
 ## Sumário
 
@@ -34,13 +34,17 @@ O estado atual é um **protótipo jogável**, com:
 - Geração de peças adaptativa à pressão do tabuleiro, com pesos e temperatura configuráveis em um único arquivo.
 - Combinação por vizinhança ortogonal, com cascatas e gravidade.
 - Combos: contagem de combinações encadeadas em uma jogada, com tela de resultado (`NNx`) e sons com pitch crescente (ver seção 6, “Combos e cadeias”).
-- Pontuação e recorde, ambos persistidos com `PlayerPrefs`.
+- Pontuação e recorde, ambos persistidos com `PlayerPrefs`, com texto flutuante “+N” a cada combinação.
 - Retomada da partida em andamento ao reabrir o jogo.
-- Tela de game over com reinício.
+- Tela de game over com reinício, reviver e anúncio recompensado.
+- Desfazer a última jogada (Undo) e destruição manual de peças (Destroy), com recarga por anúncio.
+- Tela de abertura (`Splash`) que carrega o jogo.
+- Menu de pausa com controles de volume de música e efeitos, reinício e continuar.
+- Localização em português (Brasil), espanhol e inglês, com botão de troca de idioma.
 - Overlay de debug (tecla F12).
 - Música de fundo via `AudioManager`.
 
-A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu.
+Não existe cena de menu principal. O fluxo é `Splash` → `Gameplay`.
 
 ## 2. Estado atual
 
@@ -60,25 +64,33 @@ A cena `MainMenu` ainda é um placeholder com câmera. Não existe fluxo de menu
 - Recorde persistido em `PlayerPrefs`.
 - Salvamento da partida após cada jogada válida; retomada ao abrir o jogo.
 - Game over quando uma coluna fica com 8 peças. O save não é apagado: continua no estado anterior à jogada que causou o game over.
-- Tela de game over com pontos, recorde, botão “Novo Jogo” e botão “Reviver” (ver seção 9.16).
-- Reviver: remove peças aleatórias do tabuleiro e continua a partida. Cada jogador começa com 1 reviver.
-- Efeito visual de pétalas e piscada vermelha nas peças removidas (reviver).
+- Tela de game over com pontos, recorde, botão “Novo Jogo” e botão “Reviver” (ver seção 9.16). O reviver fica disponível quando há anúncio carregado.
+- Reviver: remove peças aleatórias do tabuleiro e continua a partida. Cada jogador começa com 1 reviver. Revive a partir do game over só é concedido pela recompensa do anúncio.
+- Efeito visual de pétalas e piscada vermelha nas peças removidas (reviver e Destroy).
+- Undo: desfaz a última jogada, com 5 usos por instalação (ver seção 9.17).
+- Destroy: remove peças manualmente, com 2 usos por instalação (ver seção 9.18).
+- Recarga por anúncio recompensado de Undo e Destroy, após 20 jogadas (ver seção 9.19).
+- Anúncio recompensado (LevelPlay) no reviver e nas recargas (ver seção 9.20).
+- Texto flutuante “+N” que sai do painel de pontuação a cada combinação (ver seção 9.21).
 - Recorde e pontuação com pulso visual ao subir, e formatação de milhar por cultura.
-- Pausa com fade in/out e reinício que também restaura os revives.
+- Tela de abertura `Splash`, que carrega `Gameplay` (ver seção 9.22).
+- Pausa com fade in/out, controles de volume (música e efeitos), e reinício que também restaura os revives, undo e destroy.
+- Localização em três idiomas, com botão de troca (ver seção 9.23).
+- Bloqueio de input sobre botões e painéis, para que toques neles não iniciem uma jogada (ver seção 9.24).
 - Overlay de debug (F12) com fechar, reiniciar e limpar dados.
 - Música de fundo tocada pelo `AudioManager` (persistente entre cenas).
 - Fundo em tela cheia (`FullscreenBackground`) com ajuste "cover".
-- Cena `Gameplay` como única cena em Build Settings.
+- Build Settings: `Splash` (índice 0) e `Gameplay` (índice 1).
 
 ### Pendente ou não implementado
 
-- Cena `MainMenu` funcional e transição menu → gameplay. (O objeto `ContinueButton` existe na cena `Gameplay`, mas nenhum script do projeto o referencia.)
-- Efeito sonoro de game over (`SfxId.GameOver`) é tocado pela `GameOverScreen`, mas o clipe precisa ser conferido no `SfxLibrary.asset`. Inserção, destruição (reviver), combinação em cadeia, combo e início de partida também tocam.
-- Integração de anúncios (LevelPlay/ironSource): o `AdsManager` inicializa o SDK, mas nenhum formato (intersticial, recompensado, banner) está ligado ao jogo.
+- Efeito sonoro de game over (`SfxId.GameOver`) é tocado pela `GameOverScreen`. O clipe `_gameOver` existe em `SfxLibrary.asset`, mas precisa ser conferido ao ouvir.
+- Formatos de anúncio intersticial e banner: o `AdsManager` tem só o recompensado ligado. Os outros formatos estão apenas mencionados em comentário.
 - Tipo de peça "bad tile": o campo `BadTileSprite` existe no tema, mas a mecânica não foi implementada.
 - Teste automatizado do caminho real de toque no Editor.
-- Testes automatizados para os demais sistemas de lógica. A cobertura atual é apenas a geração de peças (ver seção 13).
+- Testes automatizados para os demais sistemas de lógica. A cobertura atual cobre geração de peças, combos, reviver, destruição, undo, recarga, localização e texto de pontuação (ver seção 13).
 - Ajuste definitivo de responsividade e orientação.
+- Inconsistência entre “Novo Jogo” (game over) e “Reinício” (pausa) sobre undo e destroy (ver seção 14).
 
 ## 3. Tecnologias e configuração
 
@@ -114,10 +126,13 @@ Assets/
     Prefabs/
       Tile.prefab           Prefab base do tile
       UI/DebugScreen.prefab Overlay de debug
+    Localization/           Tabelas e locales (inglês, espanhol, português-BR)
     Scenes/
       Gameplay.unity        Cena jogável
-      MainMenu.unity        Placeholder de menu
+      Splash.unity          Tela de abertura (primeira cena do build)
     Scripts/
+      Ads/
+        AdsManager.cs, RewardedAdService.cs
       Audio/
         AudioManager.cs, SfxLibrary.cs (ScriptableObject)
       Gameplay/
@@ -127,38 +142,55 @@ Assets/
         RandomSource.cs, SpawnTable.cs,
         PieceGenerator.cs, PieceGenerationSettings.cs, BoardPressureCalculator.cs,
         PieceDifficultyEvaluator.cs, CandidateSelection.cs, PieceGenerationDecision.cs,
-        PieceGenerationConfig.cs (ScriptableObject)
+        PieceGenerationConfig.cs (ScriptableObject),
+        ReviveSelection.cs, ReviveConfig.cs (ScriptableObject), DestructionResult.cs,
+        DestroyConfig.cs, RechargeConfig.cs, UndoConfig.cs (ScriptableObjects)
+      Localization/
+        LanguageManager.cs
       Managers/
         ScoreService.cs, ComboCounter.cs
-      Ads/
-        AdsManager.cs         Inicialização do LevelPlay (ironSource)
       Save/
         BoardState.cs, SaveSystem.cs
       UI/
         BoardView.cs, BoardViewConfig.cs (ScriptableObject), ComboResultConfig.cs (ScriptableObject),
         ComboResultScreen.cs, DebugScreen.cs, FullscreenBackground.cs, GameOverScreen.cs,
-        GameplayScreen.cs, PieceQueueView.cs, TileTheme.cs, TileView.cs
+        GameplayScreen.cs, PauseMenu.cs, OverlayFade.cs, PieceQueueView.cs, TileTheme.cs, TileView.cs,
+        ScoreFloater.cs, ScoreFloatConfig.cs (ScriptableObject), ScoreDisplayCounter.cs,
+        ScorePulse.cs, ScoreFormatter.cs, AdIconTilt.cs, UiText.cs, LocalizedUiRefresher.cs,
+        LanguageSwitcher.cs, UiInputBlocker.cs
     Data/
       BoardViewConfig.asset  Layout e durações de animação do tabuleiro (ScriptableObject)
+    Prefabs/
+      AdsManager.prefab, AudioManager.prefab, Tile.prefab, TilePetalBurst.prefab (efeito do reviver e do Destroy),
+      UI/ScoreFloater.prefab, UI/DebugScreen.prefab
     Settings/
       PieceGenerationConfig.asset  Balanceamento da geração de peças (ScriptableObject)
       ComboResultConfig.asset      Tempos, limiar, pitch da tela e do som de combo (ScriptableObject)
       SfxLibrary.asset             Clipes de efeitos sonoros por momento (ScriptableObject)
-    Sprites/                Tiles, slot, fundos, partículas
+      ReviveConfig.asset           Remoção do reviver e do Destroy (ScriptableObject)
+      DestroyConfig.asset          Usos do Destroy (ScriptableObject)
+      UndoConfig.asset             Usos e duração do Undo (ScriptableObject)
+      RechargeConfig.asset         Jogadas para recarga de Undo/Destroy (ScriptableObject)
+      ScoreFloatConfig.asset       Animação do texto flutuante de pontuação (ScriptableObject)
+    Sprites/                Tiles, slot, fundos, partículas, ícones de botões e anúncio
     Themes/
       DefaultTileTheme.asset  Tema padrão do tabuleiro e das peças
     Tests/
       Editor/                 Testes EditMode (ver seção 13)
         TestBoards.cs, BoardPressureCalculatorTests.cs, PieceDifficultyEvaluatorTests.cs,
         CandidateSelectionTests.cs, PieceGeneratorTests.cs,
-        ComboCounterTests.cs, ComboResultConfigTests.cs
+        PieceGenerationConfigTests.cs, SpawnTableTests.cs, SfxLibraryTests.cs,
+        ComboCounterTests.cs, ComboResultConfigTests.cs,
+        ReviveSelectionTests.cs, TileDestructionTests.cs, MergeCeilingTests.cs,
+        DestroyTests.cs, RechargeTests.cs, UndoStateTests.cs,
+        LanguageManagerTests.cs, LocalizationTableTests.cs, ScoreDisplayCounterTests.cs
   LeanTween/                Biblioteca de animações (inclui pasta Testing com exemplos próprios)
 ProjectSettings/
   ProjectSettings.asset
-  EditorBuildSettings.asset  Build: apenas Gameplay
+  EditorBuildSettings.asset  Build: Splash (0) e Gameplay (1)
 ```
 
-Os testes próprios ficam em `Assets/!/Tests/Editor`, sem `.asmdef`. Eles compilam em `Assembly-CSharp-Editor`, porque um `.asmdef` não pode referenciar `Assembly-CSharp`. Não há outros scripts de Editor.
+`SplashScreen.cs` fica fora de `!/`, em `Assets/Scripts/Splash/`. Os testes próprios ficam em `Assets/!/Tests/Editor`, sem `.asmdef`. Eles compilam em `Assembly-CSharp-Editor`, porque um `.asmdef` não pode referenciar `Assembly-CSharp`. Não há outros scripts de Editor.
 
 ## 5. Arquitetura
 
@@ -194,10 +226,13 @@ AudioManager (singleton, DontDestroyOnLoad) ──► AudioMixer, SfxLibrary
 
 ### Camadas
 
-- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `ComboCounter`, `RandomSource`, e a geração de peças: `PieceGenerator`, `PieceGenerationSettings`, `SpawnTable`, `BoardPressureCalculator`, `PieceDifficultyEvaluator`, `CandidateSelection`, `PieceGenerationDecision`.
+- **Gameplay puro:** `BoardModel`, `BoardController`, `CascadeResolver`, `MergeResolver`, `MergeMath`, `ScoreService`, `ComboCounter`, `RandomSource`, e a geração de peças: `PieceGenerator`, `PieceGenerationSettings`, `SpawnTable`, `BoardPressureCalculator`, `PieceDifficultyEvaluator`, `CandidateSelection`, `PieceGenerationDecision`. Também `ReviveSelection`, `DestroyConfig`, `RechargeConfig`, `UndoConfig`.
 - **Persistência:** `SaveSystem`, `BoardState`.
-- **Apresentação:** `GameplayScreen`, `BoardView`, `BoardViewConfig`, `PieceQueueView`, `TileView`, `TileTheme`, `ComboResultScreen`, `ComboResultConfig`, `GameOverScreen`, `DebugScreen`, `FullscreenBackground`.
+- **Apresentação:** `GameplayScreen`, `BoardView`, `BoardViewConfig`, `PieceQueueView`, `TileView`, `TileTheme`, `ComboResultScreen`, `ComboResultConfig`, `GameOverScreen`, `PauseMenu`, `DebugScreen`, `FullscreenBackground`, `ScoreFloater`, `ScoreDisplayCounter`, `AdIconTilt`, `UiText`, `LocalizedUiRefresher`, `LanguageSwitcher`.
 - **Áudio:** `AudioManager`, `SfxLibrary`.
+- **Anúncios:** `AdsManager`, `RewardedAdService`.
+- **Localização:** `LanguageManager`.
+- **Abertura:** `SplashScreen`.
 - **Dados de resultado:** `BoardSnapshot`, `MoveResult`, `CascadeResult`, `CascadeStep`, `MergeOutcome`, `BoardPosition`.
 
 A lógica pura não depende de `MonoBehaviour` e recebe dependências por construtor (`IRandomSource` para aleatoriedade). `GameplayScreen` é o ponto de composição da cena.
@@ -360,7 +395,7 @@ Com os padrões, o contador 2 (3 combinações) toca em 1x, o contador 3 em 1,1x
 - Ocorre quando, após uma jogada, alguma coluna tem 8 peças.
 - A tela de game over mostra pontos e recorde e oferece dois botões:
   - **Novo Jogo:** apaga o save da partida, restaura os revives para o padrão e recarrega a cena.
-  - **Reviver:** habilitado só se o jogador tiver revives. Gasta 1 revive (ver seção 9.16).
+  - **Reviver:** habilitado só se o jogador tiver revives e um anúncio recompensado estiver pronto. Ao assistir ao anúncio até o fim, gasta 1 revive (ver seções 9.16 e 9.20).
 - O save não é apagado em game over. Se o jogo for fechado na tela de game over, ao reabrir a partida ela volta no estado anterior à jogada que causou o game over, com a mesma peça atual.
 
 ## 7. Fluxo de uma jogada
@@ -394,6 +429,10 @@ Arquivo: `Assets/!/Scripts/Save/SaveSystem.cs`. Usa `PlayerPrefs`, que funciona 
 | `NumberMerge.Record` | Recorde como texto (`long`) | Ao final de cada jogada e na inicialização | Pelo overlay de debug |
 | `NumberMerge.Board` | `BoardState` em JSON | Na inicialização, ao final de cada jogada válida e ao final de cada reviver | Em “Novo Jogo”, ou quando o dado é inválido. Não é apagada em game over |
 | `NumberMerge.Revives` | Revives restantes (`int`) | Ao gastar um revive, em “Novo Jogo” e em reinício pela pausa | Pelo overlay de debug. Ausente em instalação nova: vale `1` (`SaveSystem.DefaultRevives`) |
+| `NumberMerge.UndoUses` | Usos de Undo restantes (`int`) | Ao usar Undo, e ao reiniciar pela pausa (apagada) | Pelo overlay de debug. Ausente: vale `UndoConfig.MaxUses` |
+| `NumberMerge.DestroyUses` | Usos de Destroy restantes (`int`) | Ao usar Destroy, e ao reiniciar pela pausa (apagada) | Pelo overlay de debug. Ausente: vale `DestroyConfig.MaxUses` |
+| `NumberMerge.Language` | Idioma escolhido | Ao trocar o idioma pelo botão | Não é apagada. Sem valor, usa o idioma do sistema (ver seção 9.23) |
+| `NumberMerge.Volume.<canal>` | Volume de cada canal de áudio (música, efeitos) | Ao mover o controle de volume da pausa | Não é apagada pelo jogo |
 
 `BoardState` guarda:
 
@@ -401,6 +440,8 @@ Arquivo: `Assets/!/Scripts/Save/SaveSystem.cs`. Usa `PlayerPrefs`, que funciona 
 - Todas as células, incluindo a linha de overflow, em ordem linha-major.
 - Peça atual e próxima.
 - Pontuação como texto (`JsonUtility` não suporta `long`).
+- Contador de jogadas desde a última recarga (`MovesSinceRecharge`).
+- Snapshot de Undo (campos `Undo*`), ou ausência dele. Limpo por qualquer remoção de peças (reviver ou Destroy).
 
 Ao iniciar `Gameplay`:
 
@@ -644,7 +685,7 @@ Pontuação e recorde são dois `TMP_Text` separados (`_scoreText` e `_recordTex
 Arquivo: `Assets/!/Scripts/UI/GameOverScreen.cs`
 
 - Mostra um overlay com “Pontos” e “Recorde”, e recebe o número de revives restantes. O overlay abre e fecha com `OverlayFade` (fade e escala, em tempo não escalado).
-- **Novo Jogo** (`_restartButton`): apaga o save do tabuleiro, restaura os revives para `DefaultRevives` e recarrega a cena `Gameplay`.
+- **Novo Jogo** (`_restartButton`): apaga o save do tabuleiro, restaura os revives para `DefaultRevives` e recarrega a cena `Gameplay`. Não restaura os usos de Undo e Destroy (ao contrário do reinício pela pausa, seção 9.25; ver seção 14).
 - **Reviver** (`_continueButton`): fica habilitado só com revives > 0. Chama `TriggerContinue`, que desabilita os dois botões e faz o fade-out. Ao terminar, dispara `ContinueConfirmed`, tratado pelo `GameplayScreen`.
 - Os botões ficam desabilitados durante o fade, para que o reviver não seja disparado duas vezes.
 
@@ -668,6 +709,7 @@ Arquivo: `Assets/!/Scripts/Audio/AudioManager.cs`
 - Métodos disponíveis: `PlayMusic`, `StopMusic`, `PlaySfx`, `PlayUi`, `SetVolume`, `GetVolume`. Volume é linear (0 a 1), convertido para decibéis. Os parâmetros do mixer são `MusicVolume`, `SfxVolume` e `UiVolume`.
 - `Play(SfxId)` escolhe um clipe aleatório de `SfxLibrary` e envia para o canal de UI (`ButtonPress`) ou de SFX (os demais). `PlaySfx` e `PlayUi` são os métodos que ele usa internamente.
 - `PlayChained(SfxId, índice)` e `PlayComboSfx(pitch)` tocam os sons de cadeia e de combo com pitch definido por chamada (ver seção 9.15).
+- Os volumes de música e efeitos são salvos em `NumberMerge.Volume.<canal>` e restaurados ao iniciar, pelos sliders do menu de pausa (seção 9.25).
 
 ### 9.14 `FullscreenBackground`
 
@@ -749,7 +791,7 @@ Parâmetros (`ReviveConfig`, asset `Assets/!/Settings/ReviveConfig.asset`, menu 
 |---|---:|---:|---|
 | `MinDestroyedTiles` | 1 | 3 | Mínimo de peças removidas. |
 | `MaxDestroyedFraction` | 0,2 | 0,2 | Fração máxima de peças removidas, arredondada para baixo. |
-| `DestructionDelay` | 0,5 s | 1 s | Espera, após o fade-out, antes da remoção (tempo real). |
+| `DestructionDelay` | 0,5 s | 0,7 s | Espera, após o fade-out, antes da remoção (tempo real). |
 
 Revives:
 
@@ -772,6 +814,147 @@ Configuração visual (`BoardViewConfig`):
 
 Como as peças removidas ficam visíveis durante a animação, `TileView.SetTint` é usado para a piscada. `ResetVisual` restaura a cor branca.
 
+### 9.17 Undo
+
+Arquivos: `UndoConfig.cs`, `BoardState.cs`, `GameplayScreen.cs`, `PieceQueueView.cs`, `BoardView.cs`, `SaveSystem.cs`, `UndoStateTests.cs`
+
+- Botão **Undo** em `GameplayScreen.OnUndoClicked`, que chama `TryUndo`.
+- Desfaz a última inserção: restaura tabuleiro, pontuação, fila e estado de aleatoriedade. O recorde não é revertido.
+- Após cada jogada válida, o jogo guarda um snapshot da jogada anterior. O snapshot é descartado quando a jogada termina em game over. Qualquer remoção de peças (reviver ou Destroy) também o apaga.
+- Animação: `BoardView.PlayUndo` (peça volta deslizando, com fade-in), em `UndoConfig.AnimationDuration`.
+- Uma desfeita não conta como jogada para a recarga (seção 9.19).
+
+Condições para o botão funcionar: há snapshot, restam usos, não há game over, não há animação nem prévia em andamento, e nenhum anúncio está aberto.
+
+Configuração (`UndoConfig`, asset `Assets/!/Settings/UndoConfig.asset`):
+
+| Parâmetro | Asset | Efeito |
+|---|---:|---|
+| `MaxUses` | 5 | Usos por instalação (ou após “Novo Jogo” e reinício pela pausa). |
+| `AnimationDuration` | 0,35 s | Duração da animação de volta. |
+
+Save: `NumberMerge.UndoUses` (contador) e os campos `Undo*` dentro de `NumberMerge.Board`.
+
+### 9.18 Destroy
+
+Arquivos: `DestroyConfig.cs`, `ReviveSelection.cs`, `ReviveConfig.cs`, `GameplayScreen.cs`, `BoardController.cs`, `DestroyTests.cs`
+
+- Botão **Destroy** em `GameplayScreen.OnDestroyClicked`, que chama `TryDestroy`.
+- Remove peças escolhidas pelo mesmo critério do reviver (`ReviveSelection`), mas fora do game over. A remoção usa `BoardController.TryDestroyTiles` e a animação é a mesma do reviver (seção 9.16).
+- Gasta 1 uso somente depois que a remoção foi resolvida e salva.
+- Limpa o snapshot de Undo (seção 9.17).
+
+Condições para o botão funcionar: restam usos, não há game over, o jogo não está ocupado e há pelo menos `MinDestroyedTiles` peças no tabuleiro (valor de `ReviveConfig`).
+
+Configuração (`DestroyConfig`, asset `Assets/!/Settings/DestroyConfig.asset`):
+
+| Parâmetro | Asset | Efeito |
+|---|---:|---|
+| `MaxUses` | 2 | Usos por instalação (ou após “Novo Jogo” e reinício pela pausa). |
+
+A quantidade de peças removidas vem de `ReviveConfig` (seção 9.16).
+
+Save: `NumberMerge.DestroyUses`.
+
+### 9.19 Recarga de Undo e Destroy
+
+Arquivos: `RechargeConfig.cs`, `GameplayScreen.cs`, `BoardState.cs`, `RechargeTests.cs`
+
+- Quando Undo ou Destroy estão zerados, o botão mostra o ícone de anúncio no lugar do contador. Tocar nele pede um anúncio recompensado (seção 9.20).
+- Ao receber a recompensa, o contador volta ao máximo (`UndoConfig.MaxUses` ou `DestroyConfig.MaxUses`) e o jogo salva.
+- O contador `MovesSinceRecharge` conta as inserções desde a última recarga. É compartilhado por Undo e Destroy e fica salvo em `BoardState`.
+
+Condições para oferecer a recarga:
+
+- O contador do botão está em zero.
+- Houve pelo menos `MovesPerRecharge` inserções desde a última recarga.
+- O anúncio está pronto (`CanShow`).
+- Não há game over e o jogo não está ocupado.
+- Para Undo: existe um snapshot. Para Destroy: há pelo menos 3 peças no tabuleiro.
+
+Configuração (`RechargeConfig`, asset `Assets/!/Settings/RechargeConfig.asset`):
+
+| Parâmetro | Asset | Efeito |
+|---|---:|---|
+| `MovesPerRecharge` | 20 | Inserções necessárias desde a última recarga. Mínimo 1. |
+
+### 9.20 Anúncios recompensados
+
+Arquivos: `AdsManager.cs`, `RewardedAdService.cs`, `AdIconTilt.cs`, `GameOverScreen.cs`, `GameplayScreen.cs`
+Prefab: `Assets/!/Prefabs/AdsManager.prefab` (presente em `Splash` e `Gameplay`)
+
+- `AdsManager` (singleton) inicializa o LevelPlay (ironSource) com a App Key do asset e carrega o formato recompensado. Se houver uma segunda instância, ela se destrói.
+- `RewardedAdService` cuida do carregamento e da exibição. Em caso de falha no carregamento, tenta de novo com espera de 2 s, dobrando a cada falha até o máximo de 60 s.
+- Se o anúncio for fechado sem recompensa, há uma tolerância de 2 s antes de considerar o fechamento.
+- O modo de teste do SDK (`_enableTestSuite`) vale só em builds de depuração.
+- `AdIconTilt` faz o ícone de anúncio balançar e pulsar (inclinação de 10°, escala de pico 1,08, 0,6 s, a cada 3 s).
+
+Usos do anúncio no jogo:
+
+1. **Reviver** (`GameOverScreen`): o botão “Reviver” só fica habilitado com revives > 0 e anúncio pronto. A remoção só acontece dentro do callback de recompensa, então fechar o anúncio sem recompensa não gasta nada.
+2. **Recarga de Undo e Destroy** (seção 9.19).
+
+Apenas o formato recompensado está ligado ao jogo.
+
+### 9.21 Texto flutuante de pontuação
+
+Arquivos: `ScoreFloater.cs`, `ScoreFloatConfig.cs`, `ScoreDisplayCounter.cs`, `GameplayScreen.cs`
+Prefab: `Assets/!/Prefabs/UI/ScoreFloater.prefab`
+
+- A cada combinação, um “+N” sai do painel de pontuação e voa até o texto de pontuação.
+- `ScoreDisplayCounter` mantém dois valores: o exibido e os pontos em trânsito. O número na tela só sobe quando cada floater chega, então o total não “pula” antes da animação.
+- O input fica bloqueado até todos os floaters chegarem (`WaitForScoreFloaters`).
+
+Configuração (`ScoreFloatConfig`, asset `Assets/!/Settings/ScoreFloatConfig.asset`):
+
+| Parâmetro | Asset | Padrão no código | Efeito |
+|---|---:|---:|---|
+| `SpawnOffset` | 90 | 40 | Distância (em unidades do canvas) abaixo do centro da âncora onde o floater nasce. |
+| `Duration` | 0,5 s | 0,45 s | Tempo de voo (tempo escalado). |
+| `MoveEase` | easeInQuad | easeInQuad | Curva do movimento. |
+| `StartScale` / `EndScale` | 1 / 0,6 | 1 / 0,6 | Escala no início e na chegada. O floater some durante o voo. |
+
+### 9.22 Tela de abertura (`Splash`)
+
+Arquivos: `Assets/Scripts/Splash/SplashScreen.cs`, `Assets/!/Scenes/Splash.unity`
+
+- Primeira cena do build (índice 0). Mostra o logo e carrega `Gameplay` pelo nome ao terminar.
+- Sequência, com os valores serializados na cena: espera de 0,5 s, fade-in de 1 s, permanência de 2 s, fade-out de 1 s e espera final de 0,5 s.
+- Não salva nada.
+
+### 9.23 Localização
+
+Arquivos: `LanguageManager.cs`, `LanguageSwitcher.cs`, `UiText.cs`, `LocalizedUiRefresher.cs`, `LanguageManagerTests.cs`, `LocalizationTableTests.cs`
+Pasta: `Assets/!/Localization/` (Unity Localization)
+
+- Idiomas, na ordem do botão: português (Brasil), espanhol e inglês.
+- Primeira execução: usa o idioma do sistema (português → pt-BR, espanhol → es, qualquer outro → en).
+- O botão `LanguageSwitcher` avança para o próximo idioma e salva a escolha em `NumberMerge.Language`.
+- `UiText` e `LocalizedUiRefresher` atualizam os textos da tela quando o idioma muda.
+
+Tabelas:
+
+- `UI Shared Data` com 11 chaves: `status.resolving`, `status.release_to_drop`, `status.column_full`, `status.drag_to_choose_column`, `score.points`, `score.record`, `queue.next`, `game_over.title`, `pause.title`, `button.new_game`, `button.continue`.
+- Tabelas por idioma: `UI_en`, `UI_es` e `UI_pt-BR`.
+- Não há chaves para Undo nem para Destroy. Esses botões não têm texto localizado.
+
+### 9.24 Bloqueio de input sobre a UI
+
+Arquivos: `UiInputBlocker.cs`, `GameplayScreen.cs` (`IsPressBlocked`)
+
+- `UiInputBlocker` é um componente de marcação colocado em um gráfico transparente sobre os painéis.
+- `GameplayScreen.IsPressBlocked` ignora toques sobre `UiInputBlocker` e sobre qualquer `Selectable` (botões, sliders). Assim, tocar em um botão ou no painel de controles não inicia uma jogada.
+
+### 9.25 Menu de pausa
+
+Arquivo: `Assets/!/Scripts/UI/PauseMenu.cs`
+
+- Botão de pausa abre o overlay. Enquanto aberto, `Time.timeScale` fica em 0 e `PauseMenu.IsPaused` é verdadeiro.
+- Dois sliders controlam música e efeitos (`AudioManager`, canais `Music` e `Sfx`). Os valores são salvos pelo `AudioManager`.
+- Fechar retoma a partida (fade-out).
+- **Reiniciar:** apaga o tabuleiro em andamento, restaura os revives para o padrão, apaga os contadores de Undo e Destroy, mantém o recorde e recarrega `Gameplay`. Ao reiniciar, o botão é desabilitado para evitar duas cargas de cena.
+- Ao iniciar a cena que contém o `PauseMenu`, `Time.timeScale` volta a 1, para que a partida nunca comece pausada.
+
 ## 10. Cena e layout
 
 ### Objetos da cena `Gameplay`
@@ -785,10 +968,17 @@ Objetos identificados no arquivo da cena:
 - `Title`, `ScoreText`, `RecordText`, `StatusText`
 - `QueueRoot` (com `PieceQueueView`)
 - `GameOverScreen`, com `Overlay`, `Panel`, `ScoreText`, `RecordText`, `Title` e `RestartButton`
-- Overlay de debug (`DebugScreen`)
+- Botões de **Undo** e **Destroy**, com contador ou ícone de anúncio (seções 9.17 a 9.19)
+- `PauseMenu`, com botão de pausa, overlay, sliders de música e efeitos, fechar e reiniciar (seção 9.25)
+- `LanguageSwitcher` (seção 9.23) e textos com `UiText` e `LocalizedUiRefresher`
+- `UiInputBlocker` sobre os painéis de controle (seção 9.24)
+- `ScoreFloater` (prefab `UI/ScoreFloater`) criado em tempo de execução por combinação (seção 9.21)
+- `AdsManager` (prefab instanciado; também em `Splash`) (seção 9.20)
 - `AudioManager`
 - `ContinueButton` (sem script associado no código atual)
 - `EventSystem`, com `InputSystemUIInputModule`
+
+A cena `Splash` contém o logo, o `SplashScreen` e o `AdsManager` (seção 9.22).
 
 O gameplay lê o ponteiro diretamente. O `EventSystem` existe para a UI de botões.
 
@@ -848,20 +1038,36 @@ As animações de combinação e gravidade continuam em coroutines com interpola
    - Partida retomada após fechar e reabrir o jogo.
    - Game over com pontos e recorde, e “Novo Jogo”.
    - Reviver no game over: peças removidas com piscada e pétalas, cascata resolvida, revive gasto (1 por jogador). Com 0 revives, o botão fica desabilitado.
-   - F11 (editor ou build de desenvolvimento): reviver sem gastar revive.
-   - F12 abrindo o overlay de debug, com “limpar dados e reiniciar”.
+    - F11 (editor ou build de desenvolvimento): reviver sem gastar revive.
+    - F12 abrindo o overlay de debug, com “limpar dados e reiniciar”.
+    - Splash: logo e transição automática para `Gameplay`.
+    - Texto “+N” voando do painel de pontuação até o texto de pontuação, e o número só subindo na chegada.
+    - Undo: desfaz a última jogada, restaura pontuação e fila, e gasta 1 uso (5 no total).
+    - Destroy: remove peças escolhidas, gasta 1 uso (2 no total), e não pode ser usado com menos de 3 peças.
+    - Recarga: com Undo ou Destroy zerados, tocar no ícone de anúncio oferece a recarga após 20 inserções.
+    - Reviver e recarga pedem anúncio recompensado; sem anúncio pronto, o botão fica indisponível.
+    - Pausa: sliders de música e efeitos, fechar, e reiniciar (restaura revives, undo e destroy; mantém o recorde).
+    - Idioma: troca pelo botão, na ordem pt-BR, es, en, com a escolha mantida após reiniciar o jogo.
+    - Toques em botões e painéis não iniciam jogada.
 
 Testes automatizados:
 
 1. Abrir Window > General > Test Runner.
 2. Selecionar a aba EditMode e executar todos os testes, ou filtrar pela assembly `Assembly-CSharp-Editor`.
-3. Resultado esperado: 72 testes aprovados (`BoardPressureCalculatorTests`, `PieceDifficultyEvaluatorTests`, `CandidateSelectionTests`, `PieceGeneratorTests`, `PieceGenerationConfigTests`).
+3. Resultado esperado: todos os testes aprovados. A geração de peças tem 72 testes (`BoardPressureCalculatorTests`, `PieceDifficultyEvaluatorTests`, `CandidateSelectionTests`, `PieceGeneratorTests`, `PieceGenerationConfigTests`).
 
-Testes de combo: `ComboCounterTests` (contagem de combos por cascata e reset) e `ComboResultConfigTests` (limiar, pitch e limite do pitch). Estão na mesma assembly e aparecem no Test Runner junto com os demais.
+Demais testes, na mesma assembly:
+
+- Combos: `ComboCounterTests` (contagem de combos por cascata e reset) e `ComboResultConfigTests` (limiar, pitch e limite do pitch).
+- Teto e reviver: `MergeCeilingTests`, `ReviveSelectionTests` e `TileDestructionTests`.
+- Destroy, recarga e undo: `DestroyTests`, `RechargeTests` e `UndoStateTests`.
+- Localização: `LanguageManagerTests` e `LocalizationTableTests`.
+- Pontuação: `ScoreDisplayCounterTests` (valor exibido e pontos em trânsito).
+- Áudio: `SfxLibraryTests`.
 
 Os testes exigem a janela do Editor em foco. Sem foco, a execução fica bloqueada.
 
-Build: `EditorBuildSettings.asset` contém apenas `Assets/!/Scenes/Gameplay.unity`.
+Build: `EditorBuildSettings.asset` contém `Assets/!/Scenes/Splash.unity` (índice 0) e `Assets/!/Scenes/Gameplay.unity` (índice 1).
 
 ## 13. Verificações realizadas
 
@@ -870,7 +1076,8 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 | Verificação | Estado |
 |---|---|
 | Compilação sem erros | Verificada: 0 erros, em `Assembly-CSharp` e `Assembly-CSharp-Editor` |
-| Testes EditMode da geração de peças | 72 de 72 aprovados (assembly `Assembly-CSharp-Editor`) |
+| Testes EditMode da geração de peças | 72 de 72 aprovados em 2026-10-28 (assembly `Assembly-CSharp-Editor`) |
+| Testes dos recursos de 2026-10-30 a 2026-11-04 (undo, destroy, recarga, localização, pontuação) | Existem, mas não foram executados nesta atualização do documento |
 | Referências ausentes na cena | Não verificadas nesta atualização (último registro: 0, versão anterior) |
 | Referências de inspector em `Gameplay.unity` | Presentes para `AudioManager`, `BoardView` e `PieceQueueView` (verificado por leitura do YAML) |
 | Toque real no Editor | Pendente de teste manual |
@@ -883,21 +1090,24 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 1a. Playtest da geração adaptativa. Ajustar primeiro `Temperature` e, depois, os pesos de congestionamento (alta pressão) e de flexibilidade (baixa pressão), no asset `PieceGenerationConfig`.
 2. Testar toque real em dispositivo ou no Editor com mouse.
 3. Definir a orientação e a resolução alvo, e revisar o CanvasScaler.
-4. Testar um build com `Gameplay` (inclui o ciclo de save, game over e reinício).
+4. Testar um build com `Splash` e `Gameplay` (inclui o ciclo de save, game over, reinício e anúncio recompensado em dispositivo).
+5. Decidir o comportamento de “Novo Jogo” no game over. Hoje ele não restaura os usos de Undo e Destroy, mas o reinício pela pausa restaura (seções 9.11 e 9.25). Escolher um e alinhar o outro.
 
 ### Prioridade média
 
-5. Criar a cena de menu e a transição para o gameplay, ou remover o `MainMenu` e o `ContinueButton` se não forem usados.
-6. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `ScoreService` e `BoardState`. A geração de peças já tem testes.
-7. Conferir o clipe de `SfxId.GameOver` (a `GameOverScreen` já o toca) e ligar os formatos de anúncio do `AdsManager` (intersticial, recompensado), se forem usados.
+6. Remover ou ligar o `ContinueButton`, que existe na cena `Gameplay` sem script associado.
+7. Adicionar testes automatizados para `BoardModel`, `MergeResolver`, `CascadeResolver`, `ScoreService` e `BoardState`.
+8. Conferir o clipe de `SfxId.GameOver` (a `GameOverScreen` já o toca) e ligar os formatos intersticial e banner do `AdsManager`, se forem usados.
+9. Adicionar textos localizados para Undo e Destroy (hoje não há chaves na tabela).
+10. Rever os valores do `ReviveConfig` e do `ScoreFloatConfig`: o código e o asset têm padrões diferentes (ver seções 9.16 e 9.21). O asset é o que vale em tempo de execução.
 
 ### Prioridade baixa
 
-8. Decidir se o “bad tile” entra no jogo ou se o campo `BadTileSprite` é removido.
-9. Adicionar feedback visual de pontuação.
-10. Avaliar pooling de tiles.
-11. Remover assets não utilizados ou documentar seu propósito (por exemplo, `Particles`, `scrath.png` e `tile click.mp3`).
-12. Desligar ou remover o overlay de debug em builds finais.
+11. Decidir se o “bad tile” entra no jogo ou se o campo `BadTileSprite` é removido.
+12. Avaliar pooling de tiles e de floaters de pontuação.
+13. Remover assets não utilizados ou documentar seu propósito (por exemplo, `Particles`, `scrath.png` e `tile click.mp3`).
+14. Desligar ou remover o overlay de debug em builds finais.
+15. Remover os usos de `using UnityEngine.InputSystem;` duplicados em `GameplayScreen.cs`, e conferir se `RequestRecharge` deve dar feedback quando o anúncio recusar a exibição.
 
 ## 15. Referência rápida
 
@@ -954,12 +1164,46 @@ As verificações abaixo foram feitas em 2026-10-28, com o Unity Editor conectad
 | `Assets/!/Prefabs/Tile.prefab` | Prefab base do tile |
 | `Assets/!/Themes/DefaultTileTheme.asset` | Tema padrão |
 | `Assets/!/Scenes/Gameplay.unity` | Cena jogável atual |
-| `Assets/!/Scenes/MainMenu.unity` | Placeholder de menu |
+| `Assets/!/Scenes/Splash.unity` | Tela de abertura (primeira cena do build) |
+| `Assets/Scripts/Splash/SplashScreen.cs` | Sequência da tela de abertura |
+| `Assets/!/Scripts/Gameplay/UndoConfig.cs` | Usos e duração do Undo |
+| `Assets/!/Settings/UndoConfig.asset` | Asset do Undo |
+| `Assets/!/Scripts/Gameplay/DestroyConfig.cs` | Usos do Destroy |
+| `Assets/!/Settings/DestroyConfig.asset` | Asset do Destroy |
+| `Assets/!/Scripts/Gameplay/RechargeConfig.cs` | Jogadas até a recarga de Undo e Destroy |
+| `Assets/!/Settings/RechargeConfig.asset` | Asset da recarga |
+| `Assets/!/Scripts/Ads/RewardedAdService.cs` | Carregamento e exibição do anúncio recompensado |
+| `Assets/!/Scripts/UI/PauseMenu.cs` | Pausa, volumes e reinício |
+| `Assets/!/Scripts/UI/ScoreFloater.cs` | Texto flutuante “+N” |
+| `Assets/!/Scripts/UI/ScoreDisplayCounter.cs` | Pontuação exibida e pontos em trânsito |
+| `Assets/!/Scripts/UI/ScoreFloatConfig.cs` | Parâmetros do texto flutuante |
+| `Assets/!/Settings/ScoreFloatConfig.asset` | Asset do texto flutuante |
+| `Assets/!/Scripts/Localization/LanguageManager.cs` | Idioma atual e troca |
+| `Assets/!/Scripts/UI/LanguageSwitcher.cs` | Botão de troca de idioma |
+| `Assets/!/Scripts/UI/UiText.cs`, `LocalizedUiRefresher.cs` | Textos localizados |
+| `Assets/!/Scripts/UI/UiInputBlocker.cs` | Bloqueio de toques sobre a UI |
 | `Assets/LeanTween` | Biblioteca de animações |
 
 ## 16. Mudanças desde a versão anterior
 
 Esta seção resume o que mudou em relação ao documento de 2026-10-23.
+
+#### Atualização de 2026-11-04
+
+Cobre os commits de `ac53b03` até `e1ac6ba`.
+
+- **Undo (`e1ac6ba`):** desfaz a última jogada, com 5 usos. Seção 9.17.
+- **Destroy (`e1ac6ba`, `ac53b03`):** remove peças escolhidas manualmente, com 2 usos. Seção 9.18.
+- **Recarga por anúncio (`e1ac6ba`):** Undo e Destroy voltam ao máximo após 20 inserções, pelo anúncio recompensado. Seção 9.19.
+- **Anúncio recompensado (`e683d17`, `2c2af2f`):** `RewardedAdService` e `AdIconTilt`. Usado no reviver e nas recargas. Seção 9.20.
+- **Texto flutuante de pontuação (`2b54b14`):** “+N” voa até o placar a cada combinação, e o input espera a chegada. Seção 9.21.
+- **Tela de abertura (`ff13f68`):** `Splash` é a primeira cena do build. `MainMenu` foi removida. Seção 9.22.
+- **Localização (`63d5dba`, `433c236`):** português (Brasil), espanhol e inglês, com botão de troca. Seção 9.23.
+- **Bloqueio de input sobre a UI (`5946b5c`):** toques em botões e painéis não iniciam jogada. Seção 9.24.
+- **Menu de pausa (`433c236`, `112258a`, `e1ac6ba`):** sliders de volume, reinício com Undo e Destroy. Seção 9.25.
+- **Pontuação (`f936a21`):** formatação e ajustes de desempenho.
+- **Persistência:** novas chaves `NumberMerge.UndoUses`, `NumberMerge.DestroyUses`, `NumberMerge.Language` e `NumberMerge.Volume.<canal>`. O `BoardState` passa a guardar o contador de recarga e o snapshot de Undo. Seção 8.
+- **Build:** `Splash` (índice 0) e `Gameplay` (índice 1). Seção 12.
 
 #### Atualização de 2026-10-30
 
