@@ -41,7 +41,7 @@ namespace NumberMerge.UI
             }
 
             // Spawned as a sibling placed just before the button, so the petals draw behind its image.
-            // They match the button's anchors and position, so they stay on it while it punches.
+            // Centered on the button's rect center, whatever the button's pivot is.
             Transform parent = transform.parent;
             GameObject instance = Instantiate(_petalBurstPrefab, parent, false);
             instance.transform.SetSiblingIndex(transform.GetSiblingIndex());
@@ -49,10 +49,10 @@ namespace NumberMerge.UI
             var instanceRect = instance.GetComponent<RectTransform>();
             if (instanceRect != null)
             {
-                instanceRect.anchorMin = _rectTransform.anchorMin;
-                instanceRect.anchorMax = _rectTransform.anchorMax;
-                instanceRect.pivot = _rectTransform.pivot;
-                instanceRect.anchoredPosition = _rectTransform.anchoredPosition;
+                instanceRect.anchorMin = new Vector2(0.5f, 0.5f);
+                instanceRect.anchorMax = new Vector2(0.5f, 0.5f);
+                instanceRect.pivot = new Vector2(0.5f, 0.5f);
+                instanceRect.position = _rectTransform.TransformPoint(_rectTransform.rect.center);
             }
 
             ParticleSystem burst = instance.GetComponentInChildren<ParticleSystem>(true);

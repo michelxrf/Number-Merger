@@ -27,5 +27,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 2dd1885823d6a5d4084bd237df755eec, type: 3}
   _undo:
   - {fileID: 8300000, guid: b8a9f7cdd1f5bfa4d90443ffc347d614, type: 3}
+  _powerupRecharge:
+  - {fileID: 8300000, guid: 5b1814c8b7efa544eb0a9f8e82484f4a, type: 3}
   _comboSfx:
   - {fileID: 8300000, guid: 083ad0029993f5646af28be90ffe4e95, type: 3}
