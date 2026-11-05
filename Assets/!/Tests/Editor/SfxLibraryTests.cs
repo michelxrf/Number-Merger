@@ -66,6 +66,7 @@ namespace NumberMerge.Audio.Tests
                 SfxId.GameStart => "_gameStart",
                 SfxId.GameOver => "_gameOver",
                 SfxId.ComboSfx => "_comboSfx",
+                SfxId.Undo => "_undo",
                 _ => null
             };
 

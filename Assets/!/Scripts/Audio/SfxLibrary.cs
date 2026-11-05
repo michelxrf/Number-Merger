@@ -11,7 +11,8 @@ namespace NumberMerge.Audio
         Combination,
         GameStart,
         GameOver,
-        ComboSfx
+        ComboSfx,
+        Undo
     }
 
     // Holds the clips for each sound moment. Each moment can have several clips; one is picked at random
@@ -40,6 +41,8 @@ namespace NumberMerge.Audio
         [SerializeField] private AudioClip[] _gameStart;
         [Tooltip("Played when the game over screen appears.")]
         [SerializeField] private AudioClip[] _gameOver;
+        [Tooltip("Played once when the player activates Undo.")]
+        [SerializeField] private AudioClip[] _undo;
 
         [Header("Combo")]
         [Tooltip("Played once when the combo result screen appears. Pitch is set per play by ComboResultConfig.")]
@@ -105,6 +108,8 @@ namespace NumberMerge.Audio
                     return _gameOver;
                 case SfxId.ComboSfx:
                     return _comboSfx;
+                case SfxId.Undo:
+                    return _undo;
                 default:
                     return null;
             }

@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using NumberMerge.Ads;
 using NumberMerge.Audio;
 using NumberMerge.Gameplay;
 using NumberMerge.Localization;
@@ -72,6 +74,69 @@ namespace NumberMerge.UI
         // Set by the debug key so the next revive does not spend one.
         private bool _debugFreeRevive;
 
+        [Tooltip("Undo balance: uses per game and the animation time.")]
+        [SerializeField] private UndoConfig _undoConfig;
+        [Tooltip("Undo button. Interactable only when an undo is available.")]
+        [SerializeField] private Button _undoButton;
+        [Tooltip("Small counter on the Undo button showing the uses left.")]
+        [SerializeField] private TMP_Text _undoCounterText;
+
+        // One random source for piece generation, merges and revive. Its state is saved with the board,
+        // and undo rewinds it, so the pieces after an undo are the ones the player would have seen.
+        private SeededRandomSource _random;
+
+        // Playable state before the last insertion. Null when there is nothing to undo. Saved with the board.
+        private BoardState _undoState;
+
+        // Undos left. Saved by SaveSystem; only changed when an undo is used.
+        private int _undoUses;
+
+        [Tooltip("Destroy balance: uses per game. Tile counts come from ReviveConfig.")]
+        [SerializeField] private DestroyConfig _destroyConfig;
+        [Tooltip("Destroy button. Interactable only when Destroy can be used.")]
+        [SerializeField] private Button _destroyButton;
+        [Tooltip("Small counter on the Destroy button showing the uses left.")]
+        [SerializeField] private TMP_Text _destroyCounterText;
+
+        // Destroy uses left. Saved by SaveSystem; only changed when a Destroy is used.
+        private int _destroyUses;
+
+        [Tooltip("Rewarded recharge balance: how many insertions must pass before the ad icon is offered.")]
+        [SerializeField] private RechargeConfig _rechargeConfig;
+        [Tooltip("Ad icon shown on the Undo button when its uses are empty (a copy of the Game Over ad icon).")]
+        [SerializeField] private GameObject _undoAdIcon;
+        [Tooltip("Ad icon shown on the Destroy button when its uses are empty (a copy of the Game Over ad icon).")]
+        [SerializeField] private GameObject _destroyAdIcon;
+
+        // Tile insertions since the last rewarded recharge, shared by Undo and Destroy. Saved with the board.
+        private int _movesSinceRecharge;
+
+        private enum Powerup
+        {
+            Undo,
+            Destroy
+        }
+
+        private int RechargeMoves => _rechargeConfig != null ? _rechargeConfig.MovesPerRecharge : RechargeConfig.DefaultMovesPerRecharge;
+
+        // True while a rewarded ad is on screen (including the grace period after it closes).
+        private bool IsAdShowing => AdsManager.Instance != null &&
+                                    AdsManager.Instance.Rewarded != null &&
+                                    AdsManager.Instance.Rewarded.IsShowing;
+
+        private int UndoMaxUses => _undoConfig != null ? _undoConfig.MaxUses : UndoConfig.DefaultMaxUses;
+        private float UndoDuration => _undoConfig != null ? _undoConfig.AnimationDuration : UndoConfig.DefaultAnimationDuration;
+
+        // True when the Undo button can be used right now.
+        public bool CanUndo =>
+            _undoState != null &&
+            _undoUses > 0 &&
+            _controller != null &&
+            !_controller.IsGameOver &&
+            !_isAnimating &&
+            !_isPreviewing &&
+            !IsAdShowing;
+
         private void OnEnable()
         {
             LanguageManager.LanguageChanged += OnLanguageChanged;
@@ -97,7 +162,19 @@ namespace NumberMerge.UI
             ApplyRandomBackground();
             ApplyTextColor();
             _revives = SaveSystem.LoadRevives();
+            _undoUses = SaveSystem.LoadUndoUses(UndoMaxUses);
+            _destroyUses = SaveSystem.LoadDestroyUses(DestroyMaxUses);
             LoadOrStartGame();
+
+            if (_undoButton != null)
+            {
+                _undoButton.onClick.AddListener(OnUndoClicked);
+            }
+
+            if (_destroyButton != null)
+            {
+                _destroyButton.onClick.AddListener(OnDestroyClicked);
+            }
 
             if (_gameOverScreen != null)
             {
@@ -152,6 +229,16 @@ namespace NumberMerge.UI
             _recordText.color = color;
             _statusText.color = color;
 
+            if (_undoCounterText != null)
+            {
+                _undoCounterText.color = color;
+            }
+
+            if (_destroyCounterText != null)
+            {
+                _destroyCounterText.color = color;
+            }
+
             if (_gameOverScreen != null)
             {
                 _gameOverScreen.SetTextColor(color);
@@ -174,12 +261,20 @@ namespace NumberMerge.UI
                 restored.ColumnCount == _boardView.ColumnCount &&
                 restored.VisibleRowCount == _boardView.VisibleRowCount)
             {
+                // A save without a random state (made before it existed) starts a fresh sequence.
+                _random = new SeededRandomSource(saved.TryGetRandomState(out ulong randomState)
+                    ? randomState
+                    : SeededRandomSource.NewSeed());
+
                 _pieces = CreatePieceGenerator();
                 _pieces.Restore(saved.CurrentPiece, saved.NextPiece);
                 _controller = new BoardController(restored, CreateCascadeResolver(), new ScoreService(record, score), _settings.MergeCeilingValue);
+                _undoState = ValidUndoState(saved.GetUndoState());
+                _movesSinceRecharge = Math.Max(0, saved.MovesSinceRecharge);
 
                 if (_controller.IsGameOver)
                 {
+                    _undoState = null;
                     SaveSystem.DeleteBoardState();
                 }
 
@@ -192,10 +287,28 @@ namespace NumberMerge.UI
                 SaveSystem.DeleteBoardState();
             }
 
+            _random = new SeededRandomSource(SeededRandomSource.NewSeed());
             var board = new BoardModel(_boardView.ColumnCount, _boardView.VisibleRowCount);
             _controller = new BoardController(board, CreateCascadeResolver(), new ScoreService(record), _settings.MergeCeilingValue);
             _pieces = CreatePieceGenerator();
             _pieces.Reset(board);
+            _undoState = null;
+            _movesSinceRecharge = 0;
+        }
+
+        // An undo state is only usable when it is complete and matches the board dimensions.
+        private BoardState ValidUndoState(BoardState candidate)
+        {
+            if (candidate == null ||
+                candidate.ColumnCount != _boardView.ColumnCount ||
+                candidate.VisibleRowCount != _boardView.VisibleRowCount ||
+                !candidate.TryRestore(out _, out _) ||
+                !candidate.TryGetRandomState(out _))
+            {
+                return null;
+            }
+
+            return candidate;
         }
 
         // Piece generation and merge rules (including the merge ceiling) all come from the same balance asset.
@@ -212,12 +325,12 @@ namespace NumberMerge.UI
 
         private PieceGenerator CreatePieceGenerator()
         {
-            return new PieceGenerator(new SystemRandomSource(), _settings);
+            return new PieceGenerator(_random, _settings);
         }
 
         private CascadeResolver CreateCascadeResolver()
         {
-            var mergeResolver = new MergeResolver(new SystemRandomSource(), _settings.MergeCeilingValue);
+            var mergeResolver = new MergeResolver(_random, _settings.MergeCeilingValue);
             return new CascadeResolver(mergeResolver);
         }
 
@@ -230,7 +343,9 @@ namespace NumberMerge.UI
             }
 #endif
 
-            if (DebugScreen.IsOpen || PauseMenu.IsPaused || _controller == null || _controller.IsGameOver || _isAnimating)
+            RefreshPowerupButtons();
+
+            if (DebugScreen.IsOpen || PauseMenu.IsPaused || _controller == null || _controller.IsGameOver || _isAnimating || IsAdShowing)
             {
                 return;
             }
@@ -270,6 +385,9 @@ namespace NumberMerge.UI
 
             int value = _pieces.Current;
 
+            // The playable state before this insertion. Only kept if the insertion succeeds.
+            BoardState beforeMove = CaptureState();
+
             if (!_controller.TryPlay(column, value, out MoveResult move))
             {
                 return false;
@@ -278,6 +396,12 @@ namespace NumberMerge.UI
             // The board is already resolved here, so the new piece uses the post-move state.
             _pieces.Advance(_controller.Board);
             _queueView.Advance(_pieces.Next);
+
+            // Only tile insertions count toward the rewarded recharge.
+            _movesSinceRecharge++;
+
+            // A move that ends in game over cannot be undone. Only Revive gets the player out of it.
+            _undoState = _controller.IsGameOver ? null : beforeMove;
 
             _isAnimating = true;
             UiText.SetKey(_statusLocalize, "status.resolving");
@@ -438,6 +562,8 @@ namespace NumberMerge.UI
                 return false;
             }
 
+            // Undo never reaches back across a removal (revive, or Destroy later): the board it would restore is gone.
+            _undoState = null;
             _isAnimating = true;
             _statusText.gameObject.SetActive(true);
             UiText.SetKey(_statusLocalize, "status.resolving");
@@ -500,6 +626,67 @@ namespace NumberMerge.UI
 
         private float ReviveDelay => _reviveConfig != null ? _reviveConfig.DestructionDelay : 0.5f;
 
+        // The tiles a removal takes (Revive and Destroy alike). Same picking rules, from ReviveConfig.
+        private List<BoardPosition> ChooseRemovalTiles()
+        {
+            return _reviveConfig != null
+                ? ReviveSelection.Choose(_controller.Board, _random, _reviveConfig.MinDestroyedTiles, _reviveConfig.MaxDestroyedFraction)
+                : ReviveSelection.Choose(_controller.Board, _random);
+        }
+
+        private int RemovalMinimumTiles => _reviveConfig != null ? _reviveConfig.MinDestroyedTiles : ReviveSelection.DefaultMinTiles;
+
+        private int CountTiles()
+        {
+            int count = 0;
+            for (int column = 0; column < _controller.Board.ColumnCount; column++)
+            {
+                count += _controller.Board.GetPieceCount(column);
+            }
+
+            return count;
+        }
+
+        private int DestroyMaxUses => _destroyConfig != null ? _destroyConfig.MaxUses : DestroyConfig.DefaultMaxUses;
+
+        // True when the Destroy button can be used right now.
+        public bool CanDestroy =>
+            _controller != null &&
+            DestroyEligibility.CanDestroy(
+                _destroyUses,
+                _controller.IsGameOver,
+                _isAnimating || _isPreviewing || IsAdShowing,
+                CountTiles(),
+                RemovalMinimumTiles);
+
+        // Removes the same tiles a revive would, outside game over. Costs one use, spent only after the removal.
+        // Undo is cleared by the removal (inside DestroyTiles), as it is for revive.
+        public bool TryDestroy()
+        {
+            if (!CanDestroy)
+            {
+                return false;
+            }
+
+            return DestroyTiles(ChooseRemovalTiles(), () =>
+            {
+                _destroyUses = Math.Max(0, _destroyUses - 1);
+                SaveSystem.SaveDestroyUses(_destroyUses);
+            });
+        }
+
+        private void OnDestroyClicked()
+        {
+            if (CanDestroy)
+            {
+                TryDestroy();
+            }
+            else
+            {
+                RequestRecharge(Powerup.Destroy);
+            }
+        }
+
         // Waits after the game over fade-out, then removes the tiles and solves the board.
         private IEnumerator StartRevive(bool spendRevive)
         {
@@ -510,9 +697,7 @@ namespace NumberMerge.UI
                 yield break;
             }
 
-            List<BoardPosition> tiles = _reviveConfig != null
-                ? ReviveSelection.Choose(_controller.Board, new SystemRandomSource(), _reviveConfig.MinDestroyedTiles, _reviveConfig.MaxDestroyedFraction)
-                : ReviveSelection.Choose(_controller.Board, new SystemRandomSource());
+            List<BoardPosition> tiles = ChooseRemovalTiles();
 
             bool started = DestroyTiles(tiles, () =>
             {
@@ -545,11 +730,187 @@ namespace NumberMerge.UI
                 return;
             }
 
-            SaveSystem.SaveBoardState(BoardState.Capture(
+            BoardState state = CaptureState();
+            state.SetUndoState(_undoState);
+            SaveSystem.SaveBoardState(state);
+        }
+
+        // The playable state as it is now: board, queue, score and random state. The undo state is not included.
+        private BoardState CaptureState()
+        {
+            BoardState state = BoardState.Capture(
                 _controller.Board,
                 _pieces.Current,
                 _pieces.Next,
-                _controller.CurrentScore));
+                _controller.CurrentScore);
+
+            state.RandomState = _random.State.ToString(CultureInfo.InvariantCulture);
+            state.MovesSinceRecharge = _movesSinceRecharge;
+            return state;
+        }
+
+        private void OnUndoClicked()
+        {
+            if (CanUndo)
+            {
+                TryUndo();
+            }
+            else
+            {
+                RequestRecharge(Powerup.Undo);
+            }
+        }
+
+        // Takes the board back to the playable state before the last insertion: board, score, queue and random state.
+        // The record is not reverted. Costs one use. Only one undo is possible per insertion.
+        public bool TryUndo()
+        {
+            if (!CanUndo)
+            {
+                return false;
+            }
+
+            BoardState snapshot = _undoState;
+            if (!snapshot.TryRestore(out BoardModel restored, out long score) ||
+                !snapshot.TryGetRandomState(out ulong randomState))
+            {
+                return false;
+            }
+
+            // What is on screen now, so the animation can move it back.
+            BoardSnapshot shown = BoardSnapshot.Capture(_controller.Board);
+
+            _undoUses = Math.Max(0, _undoUses - 1);
+            SaveSystem.SaveUndoUses(_undoUses);
+
+            _random.State = randomState;
+            _controller = new BoardController(restored, CreateCascadeResolver(), new ScoreService(_controller.Record, score), _settings.MergeCeilingValue);
+            _pieces.Restore(snapshot.CurrentPiece, snapshot.NextPiece);
+            _movesSinceRecharge = Math.Max(0, snapshot.MovesSinceRecharge);
+            _undoState = null;
+
+            // Saved right away, so quitting after an undo keeps the undo spent.
+            SaveProgress();
+
+            AudioManager.Instance?.Play(SfxId.Undo);
+            UiText.SetKey(_statusLocalize, "status.resolving");
+            _queueView.SetPieces(_pieces.Current, _pieces.Next);
+
+            _isAnimating = true;
+            StartCoroutine(AnimateUndo(shown));
+            return true;
+        }
+
+        private IEnumerator AnimateUndo(BoardSnapshot shown)
+        {
+            BoardSnapshot restored = BoardSnapshot.Capture(_controller.Board);
+            yield return _boardView.PlayUndo(shown, restored, UndoDuration);
+
+            _isAnimating = false;
+            RefreshUi();
+        }
+
+        // Keeps both power-up buttons in step with the game: interactable state, counter, and the rewarded ad icon.
+        // Cheap, so it runs every frame.
+        private void RefreshPowerupButtons()
+        {
+            RefreshPowerupButton(_undoButton, _undoCounterText, _undoAdIcon, _undoUses, CanUndo, RechargeOffered(Powerup.Undo));
+            RefreshPowerupButton(_destroyButton, _destroyCounterText, _destroyAdIcon, _destroyUses, CanDestroy, RechargeOffered(Powerup.Destroy));
+        }
+
+        // The button is clickable when it can be used or when its ad icon is offered. The icon replaces the counter.
+        private static void RefreshPowerupButton(
+            Button button,
+            TMP_Text counter,
+            GameObject adIcon,
+            int uses,
+            bool canUse,
+            bool rechargeOffered)
+        {
+            if (button != null)
+            {
+                button.interactable = canUse || rechargeOffered;
+            }
+
+            if (adIcon != null && adIcon.activeSelf != rechargeOffered)
+            {
+                adIcon.SetActive(rechargeOffered);
+            }
+
+            if (counter != null)
+            {
+                if (counter.gameObject.activeSelf == rechargeOffered)
+                {
+                    counter.gameObject.SetActive(!rechargeOffered);
+                }
+
+                string count = uses.ToString(CultureInfo.InvariantCulture);
+                if (counter.text != count)
+                {
+                    counter.text = count;
+                }
+            }
+        }
+
+        // The ad icon is offered only when the power-up is empty, enough insertions have passed since the last
+        // recharge, an ad is loaded, and the power-up's own condition holds (an undo snapshot, or enough tiles for Destroy).
+        private bool RechargeOffered(Powerup powerup)
+        {
+            if (_controller == null)
+            {
+                return false;
+            }
+
+            bool adAvailable = AdsManager.Instance != null &&
+                               AdsManager.Instance.Rewarded != null &&
+                               AdsManager.Instance.Rewarded.CanShow;
+
+            bool busy = _isAnimating || _isPreviewing || IsAdShowing;
+
+            bool buttonConditions = powerup == Powerup.Undo
+                ? _undoState != null
+                : CountTiles() >= RemovalMinimumTiles;
+
+            return RechargeEligibility.ShowsAdIcon(
+                powerup == Powerup.Undo ? _undoUses : _destroyUses,
+                _movesSinceRecharge,
+                RechargeMoves,
+                adAvailable,
+                _controller.IsGameOver,
+                busy,
+                buttonConditions);
+        }
+
+        // Shows the rewarded ad. The refill happens only from the reward callback, like the revive on game over.
+        private void RequestRecharge(Powerup powerup)
+        {
+            if (!RechargeOffered(powerup))
+            {
+                return;
+            }
+
+            RewardedAdService rewarded = AdsManager.Instance.Rewarded;
+            rewarded.TryShow(onRewarded: () => Recharge(powerup), onFailed: null);
+        }
+
+        // Refills the power-up to its config value and restarts the insertion count. Saved right away.
+        private void Recharge(Powerup powerup)
+        {
+            if (powerup == Powerup.Undo)
+            {
+                _undoUses = UndoMaxUses;
+                SaveSystem.SaveUndoUses(_undoUses);
+            }
+            else
+            {
+                _destroyUses = DestroyMaxUses;
+                SaveSystem.SaveDestroyUses(_destroyUses);
+            }
+
+            _movesSinceRecharge = 0;
+
+            // Not in game over here (the icon is hidden then), so the board state is saved with the new count.
+            SaveProgress();
         }
 
         // Runs once the board animation has ended. Input stays locked until every floater has reached the score,

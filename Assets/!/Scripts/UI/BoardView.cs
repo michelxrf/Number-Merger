@@ -318,6 +318,147 @@ namespace NumberMerge.UI
             EnsureGridMatches(destruction.Cascade.FinalBoard);
         }
 
+        // Undo: the board goes from "from" (what is shown now) back to "to" (the restored playable board).
+        // A tile already in the same cell with the same value stays. Every other tile slides to a free cell of the
+        // restored board in its own column with the same value (nearest row first). Tiles with no such cell fade out,
+        // and restored cells with no tile to slide in (pieces merged away by the last move) fade in.
+        // The grid is rebuilt from "to" at the end, so nothing drifts.
+        public IEnumerator PlayUndo(BoardSnapshot from, BoardSnapshot to, float duration)
+        {
+            if (from == null || to == null)
+            {
+                yield break;
+            }
+
+            EnsureBuilt();
+
+            var claimed = new bool[TotalRowCount, ColumnCount];
+            var placed = new bool[TotalRowCount, ColumnCount];
+            var movers = new List<UndoMove>();
+            var fading = new List<TileView>();
+            var appearing = new List<TileView>();
+
+            // Pass 1: tiles that already sit on a matching cell do not move.
+            for (int row = 0; row < TotalRowCount; row++)
+            {
+                for (int column = 0; column < ColumnCount; column++)
+                {
+                    if (_tileGrid[row, column] != null && from.GetValue(column, row) == to.GetValue(column, row))
+                    {
+                        claimed[row, column] = true;
+                        placed[row, column] = true;
+                    }
+                }
+            }
+
+            // Pass 2: slide each remaining tile to the nearest free matching cell in its column, or fade it out.
+            for (int row = 0; row < TotalRowCount; row++)
+            {
+                for (int column = 0; column < ColumnCount; column++)
+                {
+                    TileView tile = _tileGrid[row, column];
+                    if (tile == null || placed[row, column])
+                    {
+                        continue;
+                    }
+
+                    int value = from.GetValue(column, row);
+                    int bestRow = -1;
+
+                    for (int candidate = 0; candidate < TotalRowCount; candidate++)
+                    {
+                        if (claimed[candidate, column] || to.GetValue(column, candidate) != value)
+                        {
+                            continue;
+                        }
+
+                        if (bestRow < 0 || Mathf.Abs(candidate - row) < Mathf.Abs(bestRow - row))
+                        {
+                            bestRow = candidate;
+                        }
+                    }
+
+                    if (bestRow >= 0)
+                    {
+                        claimed[bestRow, column] = true;
+                        movers.Add(new UndoMove
+                        {
+                            Tile = tile,
+                            Start = tile.GetComponent<RectTransform>().anchoredPosition,
+                            Target = GetPosition(column, bestRow)
+                        });
+                    }
+                    else
+                    {
+                        fading.Add(tile);
+                    }
+                }
+            }
+
+            // Pass 3: restored cells that no tile slides into appear with a fade-in.
+            for (int row = 0; row < TotalRowCount; row++)
+            {
+                for (int column = 0; column < ColumnCount; column++)
+                {
+                    int value = to.GetValue(column, row);
+                    if (claimed[row, column] || value <= BoardModel.EmptyValue)
+                    {
+                        continue;
+                    }
+
+                    TileView tile = CreateTile(column, row, value, row, false);
+                    if (tile != null)
+                    {
+                        tile.SetAlpha(0f);
+                        appearing.Add(tile);
+                    }
+                }
+            }
+
+            float total = Mathf.Max(0f, duration);
+            if (total > 0f)
+            {
+                float elapsed = 0f;
+
+                while (elapsed < total)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsed / total);
+                    float eased = t * t * (3f - 2f * t);
+
+                    for (int i = 0; i < movers.Count; i++)
+                    {
+                        UndoMove move = movers[i];
+                        if (move.Tile != null)
+                        {
+                            move.Tile.GetComponent<RectTransform>().anchoredPosition =
+                                Vector2.LerpUnclamped(move.Start, move.Target, eased);
+                        }
+                    }
+
+                    for (int i = 0; i < fading.Count; i++)
+                    {
+                        if (fading[i] != null)
+                        {
+                            fading[i].SetAlpha(1f - eased);
+                        }
+                    }
+
+                    for (int i = 0; i < appearing.Count; i++)
+                    {
+                        if (appearing[i] != null)
+                        {
+                            appearing[i].SetAlpha(eased);
+                        }
+                    }
+
+                    yield return null;
+                }
+            }
+
+            SetBoard(to);
+        }
+
         // Scales the tiles up to _punchScale and back to 1, over the blink duration (half up, half back).
         private void PunchTiles(List<TileView> tiles)
         {
@@ -898,6 +1039,13 @@ namespace NumberMerge.UI
             public int Column;
             public int Row;
             public int Value;
+        }
+
+        private struct UndoMove
+        {
+            public TileView Tile;
+            public Vector2 Start;
+            public Vector2 Target;
         }
     }
 }

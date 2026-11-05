@@ -89,6 +89,34 @@ namespace NumberMerge.UI
                 .setEase(LeanTweenType.easeOutQuad);
         }
 
+        // Replaces both pieces at once (used by undo). The next piece scales up again, like after an advance.
+        public void SetPieces(int currentValue, int nextValue)
+        {
+            if (!_initialized)
+            {
+                return;
+            }
+
+            CancelPreviewTween();
+
+            if (_currentTile != null)
+            {
+                LeanTween.cancel(_currentTile.gameObject);
+                Destroy(_currentTile.gameObject);
+            }
+
+            if (_nextTile != null)
+            {
+                LeanTween.cancel(_nextTile.gameObject);
+                Destroy(_nextTile.gameObject);
+            }
+
+            CreateCurrent(currentValue);
+            CreateNext(nextValue);
+            ShowNextLabel();
+            PlayNextTileScaleUp();
+        }
+
         public void Advance(int newNextValue)
         {
             if (!_initialized)

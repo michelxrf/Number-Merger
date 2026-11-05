@@ -12,6 +12,8 @@ namespace NumberMerge.Save
         private const string RecordKey = "NumberMerge.Record";
         private const string BoardKey = "NumberMerge.Board";
         private const string RevivesKey = "NumberMerge.Revives";
+        private const string UndoUsesKey = "NumberMerge.UndoUses";
+        private const string DestroyUsesKey = "NumberMerge.DestroyUses";
         private const string VolumeKeyPrefix = "NumberMerge.Volume.";
         private const string LanguageKey = "NumberMerge.Language";
 
@@ -92,6 +94,64 @@ namespace NumberMerge.Save
             PlayerPrefs.Save();
         }
 
+        // Undos left. A missing key returns the fallback (the UndoConfig's MaxUses on a fresh install or after a restart).
+        public static int LoadUndoUses(int fallback)
+        {
+            if (!PlayerPrefs.HasKey(UndoUsesKey))
+            {
+                return Mathf.Max(0, fallback);
+            }
+
+            return Mathf.Max(0, PlayerPrefs.GetInt(UndoUsesKey, fallback));
+        }
+
+        public static void SaveUndoUses(int uses)
+        {
+            PlayerPrefs.SetInt(UndoUsesKey, Mathf.Max(0, uses));
+            PlayerPrefs.Save();
+        }
+
+        // Removes the stored count, so the next load returns the fallback. Used on restart.
+        public static void DeleteUndoUses()
+        {
+            if (!PlayerPrefs.HasKey(UndoUsesKey))
+            {
+                return;
+            }
+
+            PlayerPrefs.DeleteKey(UndoUsesKey);
+            PlayerPrefs.Save();
+        }
+
+        // Destroy uses left. A missing key returns the fallback (the DestroyConfig's MaxUses).
+        public static int LoadDestroyUses(int fallback)
+        {
+            if (!PlayerPrefs.HasKey(DestroyUsesKey))
+            {
+                return Mathf.Max(0, fallback);
+            }
+
+            return Mathf.Max(0, PlayerPrefs.GetInt(DestroyUsesKey, fallback));
+        }
+
+        public static void SaveDestroyUses(int uses)
+        {
+            PlayerPrefs.SetInt(DestroyUsesKey, Mathf.Max(0, uses));
+            PlayerPrefs.Save();
+        }
+
+        // Removes the stored count, so the next load returns the fallback. Used on restart.
+        public static void DeleteDestroyUses()
+        {
+            if (!PlayerPrefs.HasKey(DestroyUsesKey))
+            {
+                return;
+            }
+
+            PlayerPrefs.DeleteKey(DestroyUsesKey);
+            PlayerPrefs.Save();
+        }
+
         // Returns null when there is no saved board.
         public static BoardState LoadBoardState()
         {
@@ -142,6 +202,8 @@ namespace NumberMerge.Save
             PlayerPrefs.DeleteKey(RecordKey);
             PlayerPrefs.DeleteKey(BoardKey);
             PlayerPrefs.DeleteKey(RevivesKey);
+            PlayerPrefs.DeleteKey(UndoUsesKey);
+            PlayerPrefs.DeleteKey(DestroyUsesKey);
             PlayerPrefs.DeleteKey(LanguageKey);
             PlayerPrefs.Save();
         }

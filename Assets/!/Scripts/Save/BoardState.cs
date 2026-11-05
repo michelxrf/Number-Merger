@@ -23,6 +23,72 @@ namespace NumberMerge.Save
         // JsonUtility does not support long, so the score is stored as text.
         public string Score;
 
+        // State of the gameplay random source (ulong, stored as text). Null in saves made before it existed.
+        public string RandomState;
+
+        // The playable state before the last insertion, for Undo. Stored flat because JsonUtility drops fields
+        // whose type contains the same type. UndoTiles is null when there is nothing to undo.
+        // The undo state has the same ColumnCount and VisibleRowCount as the board.
+        public int[] UndoTiles;
+        public int UndoCurrentPiece;
+        public int UndoNextPiece;
+        public string UndoScore;
+        public string UndoRandomState;
+
+        // Tile insertions since the last rewarded recharge (shared by Undo and Destroy). The undo copy is the
+        // value before the undone move, so undoing does not count as a move.
+        public int MovesSinceRecharge;
+        public int UndoMovesSinceRecharge;
+
+        public bool TryGetRandomState(out ulong state)
+        {
+            return ulong.TryParse(RandomState, NumberStyles.Integer, CultureInfo.InvariantCulture, out state);
+        }
+
+        // Undo state as a standalone BoardState (its own undo fields stay empty). Null when there is none.
+        public BoardState GetUndoState()
+        {
+            // JsonUtility loads a missing array as an empty array, so empty means "no undo" too.
+            if (UndoTiles == null || UndoTiles.Length == 0)
+            {
+                return null;
+            }
+
+            return new BoardState
+            {
+                ColumnCount = ColumnCount,
+                VisibleRowCount = VisibleRowCount,
+                Tiles = UndoTiles,
+                CurrentPiece = UndoCurrentPiece,
+                NextPiece = UndoNextPiece,
+                Score = UndoScore,
+                RandomState = UndoRandomState,
+                MovesSinceRecharge = UndoMovesSinceRecharge
+            };
+        }
+
+        // Copies a standalone state into the undo fields. Null clears them.
+        public void SetUndoState(BoardState undo)
+        {
+            if (undo == null)
+            {
+                UndoTiles = null;
+                UndoCurrentPiece = 0;
+                UndoNextPiece = 0;
+                UndoScore = null;
+                UndoRandomState = null;
+                UndoMovesSinceRecharge = 0;
+                return;
+            }
+
+            UndoTiles = undo.Tiles;
+            UndoCurrentPiece = undo.CurrentPiece;
+            UndoNextPiece = undo.NextPiece;
+            UndoScore = undo.Score;
+            UndoRandomState = undo.RandomState;
+            UndoMovesSinceRecharge = undo.MovesSinceRecharge;
+        }
+
         public static BoardState Capture(BoardModel board, int currentPiece, int nextPiece, long score)
         {
             if (board == null)
