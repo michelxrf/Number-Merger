@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using NumberMerge.Audio;
 using NumberMerge.Managers;
@@ -58,9 +59,27 @@ namespace NumberMerge.UI
                 _burst.Play(true);
             }
 
-            AudioManager.Instance?.PlayComboSfx(_config.GetComboPitch(comboCount));
-            Haptics.Vibrate(_config.GetVibrationDuration(comboCount));
+            // The visual is started first and the sound and vibration are isolated, so a failure in either
+            // (for example a device refusing the vibration call) cannot stop the combo from being shown.
             _sequence = StartCoroutine(RunSequence());
+
+            try
+            {
+                AudioManager.Instance?.PlayComboSfx(_config.GetComboPitch(comboCount));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+
+            try
+            {
+                Haptics.Vibrate(_config.GetVibrationDuration(comboCount));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
         }
 
         private IEnumerator RunSequence()

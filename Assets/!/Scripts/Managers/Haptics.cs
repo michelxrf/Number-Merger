@@ -14,7 +14,16 @@ namespace NumberMerge.Managers
             }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-            VibrateAndroid(Mathf.RoundToInt(seconds * 1000f));
+            try
+            {
+                VibrateAndroid(Mathf.RoundToInt(seconds * 1000f));
+            }
+            catch (System.Exception exception)
+            {
+                // Some devices or builds refuse the Vibrator call. Fall back to the OS vibration instead of failing.
+                Debug.LogException(exception);
+                Handheld.Vibrate();
+            }
 #else
             Handheld.Vibrate();
 #endif
